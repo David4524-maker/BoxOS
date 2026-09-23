@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoxOS 11 - Windows 11 Edition (Ultra Destructible)</title>
+<style>
+  :root{
+    --accent:#0078d4;--accent-hover:#106ebe;--win-bg:#202020;--win-bg-2:#2b2b2b;
+    --win-header:#2b2b2b;--win-border:rgba(255,255,255,.09);
+    --win-border-2:rgba(255,255,255,.06);--text:#ffffff;--text-dim:#c5c5c5;--text-dim2:#9a9a9a;
+    --taskbar-bg:rgba(32,32,32,.82);--panel:rgba(43,43,43,.96);--hover:rgba(255,255,255,.08);
+    --hover-2:rgba(255,255,255,.14);--input-bg:#2d2d2d;--input-border:rgba(255,255,255,.1);
+    --danger:#c42b1c;--danger-hover:#d13438;--row:#2d2d2d;--scroll:rgba(255,255,255,.25);
+  }
+  body.light{
+    --win-bg:#f3f3f3;--win-bg-2:#fafafa;--win-header:#f3f3f3;
+    --win-border:rgba(0,0,0,.08);--win-border-2:rgba(0,0,0,.05);--text:#1a1a1a;--text-dim:#424242;
+    --text-dim2:#616161;--taskbar-bg:rgba(243,243,243,.85);--panel:rgba(249,249,249,.98);
+    --hover:rgba(0,0,0,.05);--hover-2:rgba(0,0,0,.09);--input-bg:#ffffff;--input-border:rgba(0,0,0,.13);
+    --row:#f5f5f5;--scroll:rgba(0,0,0,.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI Variable','Segoe UI',Tahoma,sans-serif;user-select:none;-webkit-font-smoothing:antialiased;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--text);}
+
+  #desktop{position:absolute;inset:0 0 48px 0;overflow:hidden;background:radial-gradient(circle at 50% 40%, #005a9e, #001833);transition:background .4s;}
+  #desktop.wp-1{background:radial-gradient(circle at 50% 40%, #005a9e, #001833);}
+  #desktop.wp-2{background:linear-gradient(135deg,#1e0033,#4b0082 50%,#05000d);}
+  #desktop.wp-3{background:linear-gradient(135deg,#003b2e,#00100d);}
+  #desktop.wp-4{background:linear-gradient(135deg,#5a0000,#170000);}
+  #desktop.wp-5{background:linear-gradient(135deg,#0b0f1a,#000);}
+  #desktop.wp-6{background:linear-gradient(135deg,#003366,#001a33 70%,#000);}
+  #desktop.wp-7{background:radial-gradient(circle at 30% 70%, #2d1b4e, #0a0015);}
+  #desktop.wp-8{background:linear-gradient(180deg,#87ceeb,#191970);}
+  #desktop.safe-mode{background:#000 !important;}
+
+  body.no-gpu #desktop{filter:grayscale(60%) contrast(180%) hue-rotate(90deg);animation:gpuGlitch .18s infinite;}
+  body.no-gpu #taskbar{filter:grayscale(60%) contrast(180%) hue-rotate(90deg);}
+  @keyframes gpuGlitch{0%{transform:translate(0,0);}20%{transform:translate(-2px,1px);}40%{transform:translate(2px,-1px);}60%{transform:translate(-1px,2px);}80%{transform:translate(1px,-2px);}100%{transform:translate(0,0);}}
+  body.no-explorer #desktop{background:#000 !important;}
+  body.no-explorer .desktop-icon{display:none !important;}
+  body.no-explorer .window{animation:winFlicker 2s infinite;}
+  @keyframes winFlicker{0%,90%,100%{opacity:1;}92%,96%{opacity:.4;}}
+  body.corrupt-text,body.corrupt-text *{font-family:'Wingdings','Comic Sans MS',fantasy !important;letter-spacing:3px;}
+  body.no-audio #tray-sound{color:#ef4444 !important;}
+  body.no-network #tb-left::after{content:' ⚠ Sin red';color:#ef4444;font-size:11px;}
+  body.no-print #tb-left::after{content:' ⚠ Sin cola impresión';color:#f59e0b;font-size:10px;}
+  body.no-wmi #tb-left::after{content:' ⚠ WMI caído';color:#ef4444;font-size:10px;}
+  body.no-services #tb-left::after{content:' ⚠ Servicios detenidos';color:#ef4444;font-size:10px;}
+  body.no-tasks #tb-left::after{content:' ⚠ Tareas eliminadas';color:#f59e0b;font-size:10px;}
+  body.no-events #tb-left::after{content:' ⚠ Sin eventos';color:#f59e0b;font-size:10px;}
+  body.no-desktop-icons .desktop-icon{display:none !important;}
+  body.low-mem .window{animation:memFlicker .8s infinite;}
+  @keyframes memFlicker{0%,100%{opacity:1;}50%{opacity:.85;}}
+  body.overheat #desktop{animation:heatShimmer 1.5s infinite;}
+  @keyframes heatShimmer{0%,100%{filter:brightness(1) saturate(1);}50%{filter:brightness(1.15) saturate(1.4) hue-rotate(-10deg);}}
+
+  .desktop-icon{position:absolute;width:90px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:12px;text-shadow:0 1px 3px rgba(0,0,0,.85);cursor:default;border-radius:4px;padding:6px 4px;text-align:center;border:1px solid transparent;touch-action:none;transition:background .12s;}
+  .desktop-icon:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.25);}
+  .desktop-icon.selected{background:rgba(0,120,212,.4);border-color:var(--accent);}
+  .icon-img{font-size:36px;margin-bottom:5px;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
+  .icon-label{pointer-events:none;line-height:1.2;font-size:11.5px;font-weight:400;padding:0 2px;word-wrap:break-word;}
+  .desktop-icon.selected .icon-label{background:var(--accent);}
+
+  #taskbar{position:fixed;bottom:0;left:0;width:100vw;height:48px;background:var(--taskbar-bg);backdrop-filter:blur(30px) saturate(150%);-webkit-backdrop-filter:blur(30px) saturate(150%);border-top:1px solid var(--win-border);display:flex;align-items:center;justify-content:center;z-index:99999;padding:0 8px;}
+  .taskbar-center{display:flex;align-items:center;gap:6px;height:100%;}
+  .taskbar-left{position:absolute;left:8px;top:0;height:100%;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);padding:0 8px;}
+  .taskbar-right{position:absolute;right:8px;top:0;height:100%;display:flex;align-items:center;gap:2px;font-size:12px;color:var(--text);}
+  .btn-start{background:transparent;border:none;height:44px;width:44px;border-radius:6px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--accent);transition:background .12s;}
+  .btn-start:hover{background:var(--hover);}
+  .taskbar-apps{display:flex;gap:6px;height:100%;align-items:center;}
+  .taskbar-item{background:transparent;color:var(--text);border:none;height:40px;min-width:40px;padding:0 10px;border-radius:6px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative;transition:background .12s;}
+  .taskbar-item:hover{background:var(--hover);}
+  .taskbar-item.active{background:var(--hover-2);}
+  .taskbar-item.active::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:16px;height:3px;background:var(--accent);border-radius:2px;}
+  .taskbar-item.running::before{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:6px;height:3px;background:var(--text-dim);border-radius:2px;}
+  .tb-icon{font-size:16px;}
+
+  .tray-btn{background:transparent;border:none;color:var(--text);cursor:pointer;font-size:13px;padding:6px 8px;border-radius:5px;display:flex;align-items:center;gap:4px;}
+  .tray-btn:hover{background:var(--hover);}
+  #clock{cursor:pointer;text-align:right;line-height:1.15;padding:4px 8px;border-radius:5px;font-size:11.5px;display:flex;flex-direction:column;align-items:flex-end;}
+  #clock:hover{background:var(--hover);}
+  #show-desktop{width:6px;height:32px;border-left:1px solid var(--win-border);cursor:pointer;margin-left:2px;}
+  #show-desktop:hover{background:var(--hover);}
+
+  #start-menu{position:fixed;bottom:56px;left:50%;transform:translateX(-50%);width:640px;max-height:680px;background:var(--panel);backdrop-filter:blur(30px) saturate(150%);border:1px solid var(--win-border);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.55);display:none;flex-direction:column;z-index:99998;color:var(--text);overflow:hidden;}
+  #start-menu.open{display:flex;animation:startIn .18s cubic-bezier(.2,.9,.3,1);}
+  @keyframes startIn{from{opacity:0;transform:translate(-50%,30px);}to{opacity:1;transform:translate(-50%,0);}}
+  .start-search{padding:20px 24px 12px;display:flex;justify-content:center;}
+  .start-search input{width:100%;max-width:500px;padding:9px 14px;border-radius:20px;border:1px solid var(--win-border);background:var(--input-bg);color:var(--text);outline:none;font-size:13px;}
+  .start-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,120,212,.15);}
+  .start-header{padding:12px 24px 8px;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;}
+  .start-header button{background:var(--hover);border:1px solid var(--win-border);color:var(--text);padding:4px 12px;border-radius:5px;font-size:11px;cursor:pointer;}
+  .start-header button:hover{background:var(--hover-2);}
+  .start-list{overflow-y:auto;padding:8px 16px 16px;flex:1;}
+  .start-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+  .start-item{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;padding:12px 4px;border-radius:6px;cursor:pointer;font-size:11.5px;text-align:center;transition:background .12s;min-height:80px;}
+  .start-item:hover{background:var(--hover);}
+  .start-item .si-icon{font-size:28px;}
+  .start-item .si-name{line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:80px;}
+  .start-footer{border-top:1px solid var(--win-border);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.08);}
+  .start-user{display:flex;align-items:center;gap:10px;font-size:13px;}
+  .start-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;}
+  .start-power{display:flex;gap:6px;}
+  .power-btn{background:transparent;border:none;color:var(--text);cursor:pointer;font-size:15px;padding:7px 10px;border-radius:5px;}
+  .power-btn:hover{background:var(--hover);}
+  .power-btn.danger:hover{background:var(--danger);color:#fff;}
+
+  .window{position:absolute;min-width:320px;min-height:200px;background:var(--win-bg);border:1px solid var(--win-border);border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden;z-index:10;}
+  .window.opening{animation:winOpen .16s cubic-bezier(.2,.9,.3,1);}
+  @keyframes winOpen{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+  .window.maximized{border-radius:0;border:none;}
+  .window-header{background:var(--win-header);padding:0;height:32px;color:var(--text);display:flex;justify-content:space-between;align-items:center;font-size:12px;border-bottom:1px solid var(--win-border);flex:0 0 auto;cursor:default;}
+  .window-title{display:flex;align-items:center;gap:8px;padding-left:14px;flex:1;min-width:0;height:100%;cursor:move;}
+  .window-title .wt-icon{font-size:14px;}
+  .window-title .wt-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;}
+  .window-controls{display:flex;height:100%;}
+  .win-btn-action{width:46px;height:100%;background:transparent;border:none;color:var(--text);cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:background .1s;}
+  .win-btn-action:hover{background:var(--hover);}
+  .win-btn-close:hover{background:var(--danger) !important;color:#fff;}
+  .window-body{padding:14px;color:var(--text);flex:1;overflow:auto;font-size:13px;background:var(--win-bg-2);}
+  .window-body.no-pad{padding:0;}
+  .rz{position:absolute;z-index:5;}
+  .rz-se{right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize;}
+  .rz-e{right:0;top:32px;width:5px;height:calc(100% - 32px);cursor:ew-resize;}
+  .rz-s{left:0;bottom:0;width:100%;height:5px;cursor:ns-resize;}
+
+  #snap-preview{position:fixed;border:2px solid var(--accent);background:rgba(0,120,212,.2);border-radius:8px;display:none;z-index:99997;pointer-events:none;backdrop-filter:blur(6px);}
+
+  button{cursor:pointer;font-family:inherit;}
+  .btn{background:var(--row);color:var(--text);border:1px solid var(--win-border);padding:6px 14px;border-radius:5px;font-size:12.5px;transition:background .12s;}
+  .btn:hover{background:var(--hover-2);}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);}
+  .btn-danger{background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:12px;transition:background .12s;}
+  .btn-danger:hover{background:var(--danger-hover);}
+  input,textarea,select{background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);border-radius:5px;padding:6px 10px;outline:none;font-size:12.5px;font-family:inherit;}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,120,212,.15);}
+
+  .exp-toolbar{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--win-border);background:var(--win-bg);flex-wrap:wrap;}
+  .exp-toolbar .btn{padding:5px 9px;font-size:13px;min-width:32px;}
+  .crumbs{display:flex;align-items:center;gap:2px;flex:1;min-width:120px;overflow:hidden;font-size:12px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:4px;padding:4px 8px;height:28px;}
+  .crumb{padding:2px 6px;border-radius:3px;cursor:pointer;white-space:nowrap;}
+  .crumb:hover{background:var(--hover-2);}
+  .crumb-sep{color:var(--text-dim2);font-size:10px;}
+  .exp-search{width:180px;height:28px;}
+  .file-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .file-table th{position:sticky;top:0;background:var(--win-bg);padding:8px 10px;text-align:left;border-bottom:1px solid var(--win-border);font-weight:600;cursor:pointer;}
+  .file-table th:hover{background:var(--hover);}
+  .file-table td{padding:6px 10px;border-bottom:1px solid var(--win-border-2);}
+  .file-table tr{cursor:default;}
+  .file-table tbody tr:hover td{background:var(--hover);}
+  .file-table tbody tr.sel td{background:rgba(0,120,212,.25);}
+  .fname{display:flex;align-items:center;gap:8px;}
+  .status-bar{padding:6px 12px;border-top:1px solid var(--win-border);font-size:11.5px;color:var(--text-dim);background:var(--win-bg);}
+
+  .cmd-body{background:#0c0c0c;color:#cccccc;font-family:'Cascadia Mono','Consolas','Courier New',monospace;padding:12px;height:100%;display:flex;flex-direction:column;font-size:13px;line-height:1.4;}
+  .cmd-output{white-space:pre-wrap;flex:1;overflow-y:auto;user-select:text;font-family:inherit;}
+  .cmd-input-line{display:flex;gap:0;align-items:center;}
+  .cmd-input{background:transparent;border:none;color:#cccccc;font-family:inherit;outline:none;width:100%;font-size:13px;}
+  .cmd-prompt{color:#cccccc;white-space:nowrap;}
+
+  #notifications{position:fixed;right:12px;bottom:60px;display:flex;flex-direction:column;gap:8px;z-index:100000;width:340px;pointer-events:none;}
+  .toast{background:var(--panel);border:1px solid var(--win-border);border-radius:8px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.55);animation:toastIn .3s cubic-bezier(.2,.9,.3,1);pointer-events:auto;backdrop-filter:blur(20px);position:relative;}
+  .toast::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:8px 0 0 8px;}
+  .toast.err::before{background:var(--danger);}
+  .toast.ok::before{background:#10b981;}
+  .toast.warn::before{background:#f59e0b;}
+  .toast.out{animation:toastOut .3s forwards;}
+  @keyframes toastIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:none;}}
+  @keyframes toastOut{to{opacity:0;transform:translateX(40px);}}
+  .toast-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .toast-msg{font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
+
+  #ctx-menu{position:fixed;background:var(--panel);border:1px solid var(--win-border);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.6);padding:5px;display:none;z-index:100002;min-width:210px;backdrop-filter:blur(20px);}
+  #ctx-menu .ctx-item{padding:8px 12px;border-radius:5px;font-size:12.5px;cursor:pointer;display:flex;gap:12px;align-items:center;}
+  #ctx-menu .ctx-item:hover{background:var(--hover-2);}
+  #ctx-menu .ctx-sep{height:1px;background:var(--win-border);margin:5px 4px;}
+
+  .flyout{position:fixed;bottom:56px;right:12px;background:var(--panel);border:1px solid var(--win-border);border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.6);padding:16px;display:none;z-index:100001;width:320px;backdrop-filter:blur(30px);}
+  .flyout.open{display:block;animation:flyIn .18s cubic-bezier(.2,.9,.3,1);}
+  @keyframes flyIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+
+  .fullscreen{position:fixed;inset:0;z-index:200000;display:none;flex-direction:column;}
+  #boot-screen{background:#000;color:#fff;align-items:center;justify-content:center;gap:30px;flex-direction:column;}
+  .boot-logo{font-size:80px;animation:pulse 2s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{opacity:.7;transform:scale(.95);}50%{opacity:1;transform:scale(1.05);}}
+  .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #lock-screen{background:linear-gradient(135deg,#001b33,#00457a);align-items:center;justify-content:center;gap:20px;color:#fff;}
+  .lock-avatar{width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:60px;border:2px solid rgba(255,255,255,.35);}
+  .lock-name{font-size:24px;font-weight:300;}
+  .lock-hint{font-size:13px;opacity:.75;}
+  .lock-pin-input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;padding:8px 14px;border-radius:20px;width:220px;text-align:center;outline:none;font-size:14px;}
+  .lock-pin-input::placeholder{color:rgba(255,255,255,.5);}
+
+  #bsod{background:#0078d7;color:#fff;justify-content:center;padding:10% 12%;z-index:300000;}
+  #bsod h1{font-size:120px;font-weight:200;margin-bottom:20px;line-height:1;}
+  #bsod p{font-size:20px;margin-bottom:16px;line-height:1.5;max-width:850px;}
+  #bsod .bsod-small{font-size:14px;opacity:.9;margin-top:8px;}
+
+  #no-os-screen{background:#000;color:#ccc;font-family:'Cascadia Mono','Consolas',monospace;padding:40px;font-size:15px;line-height:1.7;z-index:300001;}
+  .blinking-cursor{display:inline-block;width:9px;height:17px;background:#ccc;margin-left:5px;animation:blink .8s infinite;vertical-align:middle;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+  #ransomware{background:#8b0000;color:#fff;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:250000;flex-direction:column;}
+  #shutdown-screen{background:#000;color:#dcdcdc;align-items:center;justify-content:center;gap:20px;z-index:300002;}
+  #recovery-screen{background:#000;color:#fff;align-items:center;justify-content:center;gap:20px;z-index:300003;text-align:center;padding:40px;}
+
+  #security-screen{background:linear-gradient(135deg,#001a33,#001020);color:#fff;align-items:center;justify-content:center;gap:14px;z-index:180000;}
+  .sec-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff;padding:14px 30px;border-radius:6px;font-size:14px;min-width:260px;transition:background .12s;}
+  .sec-btn:hover{background:rgba(255,255,255,.18);}
+
+  .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--win-border-2);font-size:12.5px;}
+  .kv:last-child{border-bottom:none;}
+
+  ::-webkit-scrollbar{width:12px;height:12px;}
+  ::-webkit-scrollbar-thumb{background:var(--scroll);border-radius:6px;border:3px solid transparent;background-clip:padding-box;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.4);background-clip:padding-box;border:3px solid transparent;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  .store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+  .store-item{background:var(--win-bg);padding:14px;border-radius:8px;border:1px solid var(--win-border);display:flex;flex-direction:column;gap:10px;transition:transform .12s,box-shadow .12s;}
+  .store-item:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3);}
+  .store-item h4{font-size:13px;display:flex;align-items:center;gap:8px;}
+  .store-item p{font-size:11.5px;color:var(--text-dim);flex:1;line-height:1.4;}
+  .store-item button{background:var(--accent);color:#fff;border:none;padding:8px;border-radius:5px;font-weight:600;font-size:12px;}
+  .store-item button:hover{background:var(--accent-hover);}
+
+  #widgets-panel{position:fixed;bottom:56px;left:12px;width:380px;height:500px;background:var(--panel);border:1px solid var(--win-border);border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.6);padding:16px;display:none;z-index:100001;backdrop-filter:blur(30px);overflow:auto;}
+  #widgets-panel.open{display:block;animation:flyIn .18s cubic-bezier(.2,.9,.3,1);}
+  .widget{background:var(--win-bg);border:1px solid var(--win-border);border-radius:8px;padding:14px;margin-bottom:12px;}
+
+  #task-view{position:fixed;inset:0 0 48px 0;background:rgba(0,0,0,.75);display:none;z-index:140000;padding:40px;overflow:auto;backdrop-filter:blur(20px);}
+  #task-view.open{display:block;animation:popIn .2s;}
+  @keyframes popIn{from{opacity:0;}to{opacity:1;}}
+  .tv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
+  .tv-card{background:var(--win-bg);border:1px solid var(--win-border);border-radius:8px;padding:16px;cursor:pointer;transition:transform .15s;height:180px;display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+  .tv-card:hover{transform:scale(1.03);border-color:var(--accent);}
+  .tv-card .tv-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+  .tv-card .tv-preview{flex:1;background:var(--row);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:40px;opacity:.5;}
+
+  #black-screen{position:fixed;inset:0 0 48px 0;background:#000;z-index:199999;display:none;color:#888;font-family:'Segoe UI',sans-serif;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:30px;font-size:13px;}
+  #black-screen.open{display:flex;}
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="desktop" class="wp-1"></div>
+<div id="black-screen">
+  <div style="color:#666;">⚠ El shell del escritorio (explorer.exe) no está en ejecución.</div>
+  <div style="color:#444;margin-top:8px;">Puedes abrir el Administrador de tareas con Ctrl+Shift+Esc</div>
+</div>
+
+<div id="start-menu">
+  <div class="start-search"><input id="start-search-input" placeholder="🔍  Buscar aplicaciones, configuraciones y documentos" autocomplete="off"></div>
+  <div class="start-header"><span>Anclados</span><button onclick="toggleAllApps()">Todas las aplicaciones ›</button></div>
+  <div class="start-list"><div class="start-grid" id="start-list"></div></div>
+  <div class="start-footer">
+    <div class="start-user"><div class="start-avatar" id="start-avatar">👤</div><span id="start-username">Usuario</span></div>
+    <div class="start-power">
+      <button class="power-btn" title="Bloquear" onclick="lockSession()">🔒</button>
+      <button class="power-btn" title="Suspender" onclick="sleepOS()">🌙</button>
+      <button class="power-btn" title="Reiniciar" onclick="restartOS()">🔄</button>
+      <button class="power-btn danger" title="Apagar" onclick="shutdownOS()">⏻</button>
+    </div>
+  </div>
+</div>
+
+<div id="taskbar">
+  <div class="taskbar-left" id="tb-left">🖥️ BoxOS 11</div>
+  <div class="taskbar-center">
+    <button class="btn-start" onclick="toggleStart()" title="Inicio">🪟</button>
+    <button class="taskbar-item" onclick="toggleWidgets()" title="Widgets"><span class="tb-icon">🌤️</span></button>
+    <button class="taskbar-item" onclick="openTaskView()" title="Vista de tareas"><span class="tb-icon">▦</span></button>
+    <div class="taskbar-apps" id="taskbar-apps"></div>
+  </div>
+  <div class="taskbar-right">
+    <button class="tray-btn" id="tray-sound" onclick="toggleSound()" title="Sonido">🔊</button>
+    <button class="tray-btn" onclick="toggleFlyout('net-flyout')" title="Red">📶</button>
+    <button class="tray-btn" onclick="toggleFlyout('battery-flyout')" title="Batería">🔋</button>
+    <button class="tray-btn" onclick="toggleFlyout('notif-flyout')" title="Notificaciones">🔔</button>
+    <button class="tray-btn" onclick="toggleFlyout('volume-flyout')" title="Volumen">🎚️</button>
+    <div id="clock" onclick="toggleFlyout('clock-flyout')">
+      <div id="clock-time">12:00</div>
+      <div id="clock-date">01/01/2025</div>
+    </div>
+    <div id="show-desktop" onclick="showDesktop()" title="Mostrar escritorio"></div>
+  </div>
+</div>
+
+<div class="flyout" id="clock-flyout">
+  <div style="font-size:32px;font-weight:200;" id="fly-time">12:00:00</div>
+  <div style="font-size:13px;color:var(--text-dim);margin-bottom:14px;" id="fly-date"></div>
+  <div id="mini-calendar" style="font-size:12px;"></div>
+</div>
+<div class="flyout" id="volume-flyout">
+  <div style="font-size:14px;margin-bottom:10px;display:flex;justify-content:space-between;"><span>🔊 Volumen</span><span id="vol-pct">70%</span></div>
+  <input type="range" min="0" max="100" value="70" style="width:100%;" oninput="setVolume(this.value)">
+  <div style="font-size:12px;color:var(--text-dim);margin-top:12px;display:flex;justify-content:space-between;"><span>Sonidos del sistema</span><b id="vol-state">Activados</b></div>
+</div>
+<div class="flyout" id="notif-flyout">
+  <div style="font-size:14px;margin-bottom:12px;display:flex;justify-content:space-between;"><span>🔔 Notificaciones</span><button class="btn" style="padding:2px 8px;font-size:11px;" onclick="clearNotifs()">Limpiar</button></div>
+  <div id="notif-history" style="max-height:300px;overflow:auto;font-size:12px;color:var(--text-dim);">Sin notificaciones.</div>
+</div>
+<div class="flyout" id="net-flyout">
+  <div style="font-size:14px;margin-bottom:10px;">📶 Red</div>
+  <div class="kv"><span>Adaptador</span><span>BoxNet 6E</span></div>
+  <div class="kv"><span>Estado</span><span style="color:#10b981;">Conectado</span></div>
+  <div class="kv"><span>IP</span><span style="font-family:Consolas,monospace;">192.168.1.42</span></div>
+</div>
+<div class="flyout" id="battery-flyout">
+  <div style="font-size:14px;margin-bottom:10px;">🔋 Batería</div>
+  <div class="kv"><span>Nivel</span><span>87%</span></div>
+  <div class="kv"><span>Estado</span><span>En uso</span></div>
+</div>
+
+<div id="widgets-panel">
+  <div style="font-size:15px;font-weight:600;margin-bottom:14px;">Widgets</div>
+  <div class="widget"><div style="font-size:12px;color:var(--text-dim);">🌤️ Clima</div><div style="font-size:32px;font-weight:200;margin-top:6px;">22°</div></div>
+  <div class="widget"><div style="font-size:12px;color:var(--text-dim);">📈 Acciones</div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px;"><span>BOX</span><span style="color:#10b981;">+3.42%</span></div></div>
+</div>
+
+<div id="task-view">
+  <div style="color:#fff;font-size:20px;font-weight:300;margin-bottom:20px;">Vista de tareas</div>
+  <div class="tv-grid" id="tv-grid"></div>
+</div>
+
+<div id="notifications"></div>
+<div id="ctx-menu"></div>
+<div id="snap-preview"></div>
+
+<div class="fullscreen" id="boot-screen">
+  <div class="boot-logo">🪟</div>
+  <div class="spinner"></div>
+  <div style="font-size:14px;opacity:.7;" id="boot-text">Iniciando BoxOS 11...</div>
+  <div style="font-size:11px;opacity:.45;">Haz clic para omitir</div>
+</div>
+
+<div class="fullscreen" id="lock-screen">
+  <div class="lock-avatar">👤</div>
+  <div class="lock-name" id="lock-username">Usuario</div>
+  <input class="lock-pin-input" id="lock-pin" type="password" placeholder="PIN (box)" maxlength="12">
+  <div class="lock-hint">Presiona Enter o haz clic fuera</div>
+</div>
+
+<div class="fullscreen" id="security-screen">
+  <div style="font-size:22px;margin-bottom:18px;font-weight:300;">Opciones de seguridad</div>
+  <button class="sec-btn" onclick="hideScreen('security-screen');lockSession();">🔒 Bloquear</button>
+  <button class="sec-btn" onclick="hideScreen('security-screen');openTaskManager();">📊 Administrador de tareas</button>
+  <button class="sec-btn" onclick="hideScreen('security-screen');">✖ Cancelar</button>
+</div>
+
+<div class="fullscreen" id="bsod">
+  <h1>:(</h1>
+  <p>Tu dispositivo BoxOS encontró un problema y necesita reiniciarse.</p>
+  <p style="font-size:16px;" id="bsod-reason">Código de detención: CRITICAL_PROCESS_DIED</p>
+  <p class="bsod-small">Progreso: <span id="bsod-progress">0</span>% completado</p>
+  <div style="display:flex;gap:12px;margin-top:20px;">
+    <button class="btn" style="background:#fff;color:#0078d7;font-weight:600;padding:10px 24px;border:none;border-radius:4px;" onclick="restartOS()">Reiniciar ahora</button>
+    <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid #fff;padding:10px 24px;border-radius:4px;" onclick="bootSafeMode()">Opciones avanzadas</button>
+  </div>
+</div>
+
+<div class="fullscreen" id="no-os-screen">
+  <div>Booting from Hard Disk 0...</div>
+  <div>Boot failed: Hard Disk not found or unformatted.</div>
+  <br>
+  <div>An operating system wasn't found.</div>
+  <div style="margin-top:20px;">Presione cualquier tecla para reintentar<span class="blinking-cursor"></span></div>
+  <div style="margin-top:16px;color:#6ee7b7;">Pulsa <b>R</b> para reparar con BoxOS Recovery</div>
+  <div id="no-os-output" style="margin-top:14px;color:#888;"></div>
+</div>
+
+<div class="fullscreen" id="ransomware">
+  <h1 style="font-size:46px;margin-bottom:14px;">⚠️ WANNA_BOX_CRY ⚠️</h1>
+  <p style="font-size:16px;max-width:700px;">Todos tus archivos han sido encriptados con RSA-4096 + AES-256.</p>
+  <p style="margin:26px 0;font-size:32px;color:#ffcc00;font-weight:200;">Tiempo restante: <span id="ransom-timer">05:00</span></p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+    <button class="btn-danger" style="padding:12px 28px;font-size:15px;" onclick="payRansom()">PAGAR 500 BITCOINS</button>
+    <button class="btn" style="padding:12px 28px;font-size:15px;background:#10b981;border:none;color:#fff;" onclick="openAntivirus()">🛡️ Ejecutar Box Antivirus</button>
+    <button class="btn" style="padding:12px 28px;font-size:15px;background:#333;color:#fff;border:1px solid #555;" onclick="triggerBSOD('RANSOMWARE_SYSTEM_DESTRUCTION')">DESTRUIR SISTEMA</button>
+  </div>
+</div>
+
+<div class="fullscreen" id="shutdown-screen">
+  <div class="spinner"></div>
+  <div style="font-size:20px;font-weight:300;" id="shutdown-text">Apagando...</div>
+  <div style="font-size:12px;opacity:.6;">No apagues el equipo por la fuerza</div>
+</div>
+
+<div class="fullscreen" id="recovery-screen">
+  <div style="font-size:56px;">🔧</div>
+  <div style="font-size:24px;">BoxOS Recovery Environment</div>
+  <div class="spinner"></div>
+</div>
+
+<script>
+/* =====================================================================
+   PROTECCIÓN CONTRA PANTALLA DE ARRANQUE ATASCADA
+   - Si hay un error de JS, oculta la pantalla de arranque.
+   - Si tras 3s sigue visible, la oculta a la fuerza.
+   - Se ejecuta ANTES de DOMContentLoaded.
+   ===================================================================== */
+window.addEventListener('error', function(ev){
+  try{
+    var bs = document.getElementById('boot-screen');
+    if(bs && getComputedStyle(bs).display !== 'none'){
+      bs.style.setProperty('display','none','important');
+    }
+  }catch(e){}
+});
+(function forceBootHide(){
+  var tries = 0;
+  var iv = setInterval(function(){
+    tries++;
+    try{
+      var bs = document.getElementById('boot-screen');
+      if(!bs){ clearInterval(iv); return; }
+      var visible = getComputedStyle(bs).display !== 'none';
+      if(!visible){ clearInterval(iv); return; }
+      if(tries >= 15){ bs.style.setProperty('display','none','important'); clearInterval(iv); }
+    }catch(e){ clearInterval(iv); }
+  }, 200);
+})();
+
+/* =====================================================================
+   BoxOS 11 — Núcleo del sistema · +70 formas de destrucción
+   ===================================================================== */
+var $  = function(s, r){ return (r||document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+var fmtSize = function(n){ return n < 1024 ? n + ' B' : (n/1024).toFixed(1) + ' KB'; };
+var fmtDate = function(t){ return new Date(t).toLocaleString('es-ES', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+var rnd = function(a,b){ return Math.floor(Math.random()*(b-a+1))+a; };
+
+var audioCtx = null;
+function ac(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return audioCtx; }
+function beep(freq, dur, type, vol){
+  type = type || 'square'; vol = vol || 0.05;
+  if(!settings.sound) return;
+  try{
+    var ctx = ac(); if(!ctx) return;
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime);
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + dur);
+  }catch(e){}
+}
+function playAudio(type){
+  if(!settings.sound) return;
+  var notes = {
+    error:[[180,.18,'sawtooth',.06],[90,.25,'sawtooth',.06]],
+    bsod:[[120,.9,'square',.05]],
+    beep:[[440,.08,'square',.05]],
+    click:[[900,.03,'sine',.03]],
+    notify:[[880,.08,'sine',.04],[1180,.09,'sine',.04]],
+    startup:[[523,.25,'sine',.05],[659,.25,'sine',.05],[784,.25,'sine',.05],[1046,.25,'sine',.05]],
+    shutdown:[[784,.25,'sine',.05],[659,.25,'sine',.05],[523,.25,'sine',.05],[392,.25,'sine',.05]],
+    success:[[523,.12,'sine',.05],[784,.15,'sine',.05]],
+    warn:[[330,.15,'square',.04],[330,.15,'square',.04]]
+  };
+  var seq = notes[type]; if(!seq) return;
+  seq.forEach(function(n, i){ setTimeout(function(){ beep(n[0], n[1], n[2], n[3]); }, i*130); });
+}
+
+var settings = { sound:true, volume:70, theme:'dark', accent:'#0078d4', wallpaper:'wp-1', username:'Usuario', password:'box', icons:{}, iconLabels:{} };
+
+var damage = {
+  gpuFailed:false, audioFailed:false, networkFailed:false, fontCorrupt:false,
+  explorerDead:false, bootloaderGone:false, desktopGone:false, defenderDead:false,
+  recoveryDead:false, printDead:false, wmiDead:false, servicesDead:false,
+  tasksDead:false, eventsDead:false, logsDead:false, lowMem:false, overheat:false,
+  diskWiped:false, registryCorrupt:false, groupPolicyLock:false, adminDeleted:false,
+  updateBroken:false, netAdapterDisabled:false, dotnetRemoved:false, executionPolicyOpen:false
+};
+
+var vfs = null, recycleBin = [];
+var isCDestroyed = false, safeMode = false;
+var ransomwareActive = false, ransomwareTimer = null;
+var forkBombInterval = null, minerInterval = null, keyloggerInterval = null;
+var systemHealth = 100;
+
+/* ============ ARCHIVOS CRÍTICOS ============ */
+var CRITICAL_FILES = {
+  'C:/Windows/System32/ntoskrnl.exe':   { bsod:'KERNEL_SECURITY_CHECK_FAILURE' },
+  'C:/Windows/System32/hal.dll':        { bsod:'HAL_INITIALIZATION_FAILED' },
+  'C:/Windows/System32/kernel32.dll':   { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/user32.dll':     { effect:'no-explorer' },
+  'C:/Windows/System32/ntdll.dll':      { bsod:'SYSTEM_SERVICE_EXCEPTION' },
+  'C:/Windows/System32/winload.exe':    { bsod:'BOOT_DEVICE_INACCESSIBLE' },
+  'C:/Windows/System32/bootmgr.efi':    { effect:'no-os' },
+  'C:/bootmgr':                         { effect:'no-os' },
+  'C:/BOOTNXT':                         { effect:'no-os' },
+  'C:/Windows/System32/winlogon.exe':   { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/csrss.exe':      { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/smss.exe':       { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/lsass.exe':      { bsod:'SECURITY_SYSTEM_FAILURE' },
+  'C:/Windows/System32/services.exe':   { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/svchost.exe':    { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/explorer.exe':   { effect:'no-explorer' },
+  'C:/Windows/System32/drivers/disk.sys':     { bsod:'INACCESSIBLE_BOOT_DEVICE' },
+  'C:/Windows/System32/drivers/ntfs.sys':     { bsod:'UNMOUNTABLE_BOOT_VOLUME' },
+  'C:/Windows/System32/drivers/gpu_driver.sys':{ effect:'no-gpu' },
+  'C:/Windows/System32/drivers/audio.sys':    { effect:'no-audio' },
+  'C:/Windows/System32/drivers/network.sys':  { effect:'no-network' },
+  'C:/Windows/System32/drivers/usb.sys':      { warning:true },
+  'C:/Windows/System32/config/SAM':       { bsod:'SECURITY_SYSTEM_FAILURE' },
+  'C:/Windows/System32/config/SYSTEM':    { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/config/SOFTWARE':  { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/winre.wim':         { effect:'recovery-dead' },
+  'C:/Windows/System32/spoolsv.exe':       { effect:'no-print' },
+  'C:/Windows/System32/dwm.exe':           { bsod:'DWM_CRITICAL_FAILURE' },
+  'C:/Windows/System32/wuauclt.exe':       { warning:true, effect:'update-broken' },
+  'C:/Windows/System32/RuntimeBroker.exe': { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/conhost.exe':       { warning:true },
+  'C:/Windows/System32/ctfmon.exe':        { warning:true },
+  'C:/Windows/System32/dllhost.exe':       { warning:true },
+  'C:/Windows/System32/taskhostw.exe':     { warning:true },
+  'C:/Windows/System32/audiodg.exe':       { effect:'no-audio' },
+  'C:/Windows/System32/LogonUI.exe':       { bsod:'LOGON_UI_FAILURE' },
+  'C:/Windows/System32/wininit.exe':       { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/CodeIntegrity':     { bsod:'CODE_INTEGRITY_FAILURE' },
+  'C:/Windows/System32/DriverStore':       { bsod:'DRIVER_UNLOADED_WITHOUT_CANCELLING_PENDING_OPERATIONS' },
+  'C:/Windows/System32/CatRoot':           { warning:true },
+  'C:/Windows/System32/Debug':             { warning:true },
+  'C:/Windows/System32/LogFiles':          { warning:true, effect:'no-logs' },
+  'C:/Windows/System32/Tasks':             { warning:true, effect:'no-tasks' },
+  'C:/Windows/System32/winevt':            { warning:true, effect:'no-events' },
+  'C:/Windows/System32/Setup':             { bsod:'SYSTEM_SETUP_FAILED' },
+  'C:/Windows/System32/Migration':         { warning:true },
+  'C:/Windows/System32/spool':             { effect:'no-print' },
+  'C:/Windows/System32/Wbem':              { effect:'no-wmi' },
+  'C:/Windows/System32/Recovery':          { effect:'recovery-dead' },
+  'C:/Windows/System32/SoftwareDistribution':{ warning:true, effect:'update-broken' },
+  'C:/Windows/assembly':                   { bsod:'SIDE_BY_SIDE_CONFIGURATION_INVALID' },
+  'C:/Windows/WinSxS':                     { bsod:'SIDE_BY_SIDE_CONFIGURATION_INVALID' },
+  'C:/Windows/INF':                        { warning:true },
+  'C:/Windows/boot':                       { effect:'no-os' },
+  'C:/Windows/System32/SysWOW64':          { warning:true },
+  'C:/Recovery/WinRE.wim':                 { warning:true, effect:'recovery-dead' },
+  'C:/pagefile.sys':                       { warning:true },
+  'C:/hiberfil.sys':                       { warning:true }
+};
+
+var PROTECTED_PATHS = {
+  'C:/Windows':              { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32':     { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/System32/drivers':{ bsod:'DRIVER_IRQL_NOT_LESS_OR_EQUAL' },
+  'C:/Windows/System32/config': { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:/Windows/Fonts':        { effect:'corrupt-text' },
+  'C:/Program Files':        { warning:true },
+  'C:/Program Files (x86)':  { warning:true },
+  'C:/Program Files/Microsoft/Windows Defender': { warning:true, effect:'defender-dead' },
+  'C:/Users/Usuario':        { inUse:true },
+  'C:/Users':                { inUse:true },
+  'C:/Users/Usuario/Desktop':{ effect:'desktop-gone' },
+  'C:/Recovery':             { warning:true, effect:'recovery-dead' }
+};
+
+var APPS = {
+  explorer:{name:'Explorador de archivos',icon:'📁',run:function(){openExplorer('C:');}},
+  cmd:{name:'Símbolo del sistema',icon:'⬛',run:function(){openCMD();}},
+  powershell:{name:'PowerShell',icon:'🔷',run:function(){openPowerShell();}},
+  regedit:{name:'Editor del Registro',icon:'🗝️',run:function(){openRegedit();}},
+  store:{name:'Microsoft Store',icon:'🛍️',run:function(){openBoxStore();}},
+  taskmgr:{name:'Administrador de tareas',icon:'📊',run:function(){openTaskManager();}},
+  notepad:{name:'Bloc de notas',icon:'📝',run:function(){openNotepad();}},
+  calc:{name:'Calculadora',icon:'🧮',run:function(){openCalculator();}},
+  settings:{name:'Configuración',icon:'⚙️',run:function(){openSettings();}},
+  defender:{name:'Seguridad de Windows',icon:'🛡️',run:function(){openAntivirus();}},
+  browser:{name:'Microsoft Edge',icon:'🌐',run:function(){openBrowser();}},
+  recycle:{name:'Papelera de reciclaje',icon:'🗑️',run:function(){openRecycleBin();}},
+  paint:{name:'Paint',icon:'🎨',run:function(){openPaint();}},
+  photos:{name:'Fotos',icon:'🖼️',run:function(){openPhotos();}},
+  devmgr:{name:'Administrador de dispositivos',icon:'🔧',run:function(){openDeviceManager();}},
+  diskmgr:{name:'Administración de discos',icon:'💽',run:function(){openDiskManager();}},
+  control:{name:'Panel de control',icon:'🎛️',run:function(){openSettings();}},
+  update:{name:'Windows Update',icon:'🔄',run:function(){openWindowsUpdate();}},
+  eventvwr:{name:'Visor de eventos',icon:'📋',run:function(){openEventViewer();}},
+  services:{name:'Servicios',icon:'⚡',run:function(){openServices();}},
+  diskpart:{name:'DiskPart',icon:'💥',run:function(){openDiskpart();}},
+  features:{name:'Caract. de Windows',icon:'🧩',run:function(){openFeatures();}},
+  userdel:{name:'Administración usuarios',icon:'👥',run:function(){openUserManager();}},
+  wiper:{name:'Wiper',icon:'🧹',run:function(){openWiper();}}
+};
+
+function mkfile(content){ return {type:'file', content:String(content||''), modified:Date.now(), size:String(content||'').length}; }
+function mkdir(children){ return {type:'dir', content:children||{}, modified:Date.now()}; }
+
+function createVFS(){
+  return { "C:" : mkdir({
+    "Windows": mkdir({
+      "System32": mkdir({
+        "cmd.exe":mkfile('MZ'),"explorer.exe":mkfile('MZ'),
+        "ntoskrnl.exe":mkfile('MZ'),"regedit.exe":mkfile('MZ'),
+        "hal.dll":mkfile('HAL'),"kernel32.dll":mkfile('DLL'),"user32.dll":mkfile('DLL'),
+        "ntdll.dll":mkfile('DLL'),"winlogon.exe":mkfile('MZ'),
+        "csrss.exe":mkfile('MZ'),"smss.exe":mkfile('MZ'),
+        "svchost.exe":mkfile('MZ'),"lsass.exe":mkfile('MZ'),
+        "services.exe":mkfile('MZ'),
+        "spoolsv.exe":mkfile('MZ'),"dwm.exe":mkfile('MZ'),
+        "wuauclt.exe":mkfile('MZ'),"RuntimeBroker.exe":mkfile('MZ'),
+        "conhost.exe":mkfile('MZ'),"ctfmon.exe":mkfile('MZ'),
+        "dllhost.exe":mkfile('MZ'),"taskhostw.exe":mkfile('MZ'),
+        "audiodg.exe":mkfile('MZ'),"LogonUI.exe":mkfile('MZ'),
+        "wininit.exe":mkfile('MZ'),"winre.wim":mkfile('WinRE'),
+        "drivers": mkdir({
+          "gpu_driver.sys":mkfile('GPU'),"audio.sys":mkfile('Audio'),
+          "network.sys":mkfile('Net'),"usb.sys":mkfile('USB'),
+          "disk.sys":mkfile('Disk'),"ntfs.sys":mkfile('NTFS')
+        }),
+        "config": mkdir({
+          "system.ini":mkfile('[boot]\ntimeout=30\n'),
+          "SAM":mkfile('SAM'),"SYSTEM":mkfile('SYSTEM'),"SOFTWARE":mkfile('SOFTWARE')
+        }),
+        "CodeIntegrity":mkdir({}),"DriverStore":mkdir({}),"CatRoot":mkdir({}),
+        "Debug":mkdir({}),"LogFiles":mkdir({}),"Tasks":mkdir({}),
+        "winevt":mkdir({"Logs":mkdir({})}),"Setup":mkdir({}),"Migration":mkdir({}),
+        "spool":mkdir({}),"Wbem":mkdir({}),"Recovery":mkdir({}),
+        "SoftwareDistribution":mkdir({}),
+        "winload.exe":mkfile('MZ'),"bootmgr.efi":mkfile('MZ'),
+        "SysWOW64":mkdir({"kernel32.dll":mkfile('DLL')})
+      }),
+      "Fonts": mkdir({"arial.ttf":mkfile('fuente'),"segoe.ttf":mkfile('fuente'),"consola.ttf":mkfile('fuente')}),
+      "Temp": mkdir({}),
+      "Logs": mkdir({"CBS.log":mkfile('[2025] Session ok.')}),
+      "assembly": mkdir({}),"WinSxS": mkdir({}),"INF": mkdir({}),"boot": mkdir({})
+    }),
+    "Program Files": mkdir({
+      "Microsoft": mkdir({
+        "Edge": mkdir({"msedge.exe":mkfile('MZ')}),
+        "Windows Defender": mkdir({"MsMpEng.exe":mkfile('MZ')})
+      }),
+      "BoxStore": mkdir({"store.exe":mkfile('MZ')}),
+      "Box Antivirus": mkdir({"av.exe":mkfile('MZ')})
+    }),
+    "Program Files (x86)": mkdir({}),
+    "Users": mkdir({
+      "Usuario": mkdir({
+        "Desktop": mkdir({"Bienvenido.txt":mkfile('Bienvenido a BoxOS 11\n\nPrueba a borrar C:\\Windows\\System32 ;)')}),
+        "Documents": mkdir({"informe.docx":mkfile('...'),"presupuesto.xlsx":mkfile('...')}),
+        "Downloads": mkdir({"setup.exe":mkfile('MZ')}),
+        "Pictures": mkdir({"wallpaper.jpg":mkfile('jpg')}),
+        "AppData": mkdir({
+          "Local": mkdir({"Temp":mkdir({}),"Microsoft":mkdir({"Edge":mkdir({})})}),
+          "Roaming": mkdir({"Microsoft":mkdir({})})
+        })
+      }),
+      "Public": mkdir({})
+    }),
+    "Recovery": mkdir({"WinRE.wim":mkfile('WinRE')}),
+    "pagefile.sys": mkfile('Paging'),
+    "hiberfil.sys": mkfile('Hibernate'),
+    "bootmgr": mkfile('BootMgr'),
+    "BOOTNXT": mkfile('BootNXT'),
+    "README.txt": mkfile('BoxOS 11 · Ultra Destructible · 70 nuevas formas')
+  })};
+}
+
+function splitPath(p){ return String(p).split('/').filter(Boolean); }
+function getNode(path){
+  var parts = splitPath(path); if(!parts.length) return null;
+  var node = vfs[parts[0]]; if(!node) return null;
+  for(var i=1;i<parts.length;i++){
+    if(node.type!=='dir' || !node.content[parts[i]]) return null;
+    node = node.content[parts[i]];
+  }
+  return node;
+}
+function getParentPath(path){ var p = splitPath(path); p.pop(); return p.join('/') || 'C:'; }
+function joinPath(a, b){ return a.replace(/\/$/,'') + '/' + b; }
+
+function saveState(){ /* no-op: al recargar todo vuelve a normal */ }
+function loadState(){ try{ localStorage.removeItem('boxos11'); }catch(e){} return false; }
+function factoryReset(){
+  try{ localStorage.removeItem('boxos11'); }catch(e){}
+  vfs = createVFS(); recycleBin = [];
+  isCDestroyed=false; safeMode=false; ransomwareActive=false; systemHealth=100;
+  damage = { gpuFailed:false,audioFailed:false,networkFailed:false,fontCorrupt:false,explorerDead:false,
+    bootloaderGone:false,desktopGone:false,defenderDead:false,recoveryDead:false,printDead:false,
+    wmiDead:false,servicesDead:false,tasksDead:false,eventsDead:false,logsDead:false,lowMem:false,
+    overheat:false,diskWiped:false,registryCorrupt:false,groupPolicyLock:false,adminDeleted:false,
+    updateBroken:false,netAdapterDisabled:false,dotnetRemoved:false,executionPolicyOpen:false };
+  clearInterval(ransomwareTimer); clearInterval(forkBombInterval);
+  clearInterval(minerInterval); clearInterval(keyloggerInterval);
+  settings.icons={}; settings.iconLabels={};
+  document.body.className = document.body.className.replace(/no-[a-z-]+|corrupt-text|low-mem|overheat/g,'').trim();
+  $('#black-screen').classList.remove('open');
+  toast('Sistema restablecido', 'BoxOS 11 vuelve a su estado de fábrica.', 'ok');
+  setTimeout(function(){ location.reload(); }, 900);
+}
+
+var notifHistory = [];
+function toast(title, msg, type, timeout){
+  msg = msg || ''; type = type || 'info'; timeout = timeout || 4500;
+  var box = $('#notifications'); if(!box) return;
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type==='error'?'err':type==='ok'?'ok':type==='warn'?'warn':'');
+  el.innerHTML = '<div class="toast-title">'+esc(title)+'</div>' + (msg?'<div class="toast-msg">'+esc(msg)+'</div>':'');
+  box.appendChild(el);
+  setTimeout(function(){ el.classList.add('out'); setTimeout(function(){ el.remove(); }, 320); }, timeout);
+  notifHistory.unshift({title:title, msg:msg, time:Date.now(), type:type});
+  if(notifHistory.length>30) notifHistory.pop();
+  renderNotifHistory();
+  playAudio(type==='error'?'warn':'notify');
+}
+function renderNotifHistory(){
+  var h = $('#notif-history'); if(!h) return;
+  if(!notifHistory.length){ h.textContent='Sin notificaciones.'; return; }
+  h.innerHTML = notifHistory.map(function(n){ return '<div style="padding:8px 0;border-bottom:1px solid var(--win-border-2);"><b style="color:var(--text);">'+esc(n.title)+'</b><br>'+esc(n.msg)+'<br><span style="opacity:.6;font-size:10.5px;">'+fmtDate(n.time)+'</span></div>'; }).join('');
+}
+function clearNotifs(){ notifHistory=[]; renderNotifHistory(); }
+
+function showDialog(opts){
+  opts = opts || {};
+  var title = opts.title || 'BoxOS', message = opts.message || '', icon = opts.icon || 'ℹ️';
+  var buttons = opts.buttons || [{label:'Aceptar', primary:true}];
+  var width = opts.width || 440;
+  var id = createWindow({title:title, icon:icon, width:width, autoHeight:true, resizable:false, appId:'dialog',
+    body:'<div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap;">'+esc(message)+'</div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">'+
+    buttons.map(function(b,i){ return '<button class="btn '+(b.primary?'btn-primary':'')+'" data-dlg="'+i+'">'+esc(b.label)+'</button>'; }).join('')+'</div>'});
+  var el = document.getElementById(id); if(!el) return id;
+  $$('[data-dlg]', el).forEach(function(btn){ btn.onclick = function(){
+    var b = buttons[+btn.dataset.dlg]; closeWindow(id);
+    if(b && b.onClick) b.onClick();
+  };});
+  return id;
+}
+function showPrompt(opts){
+  opts = opts || {};
+  var title = opts.title || 'BoxOS', message = opts.message || '', value = opts.value || '', icon = opts.icon || '✏️';
+  var onOk = opts.onOk; var width = opts.width || 420;
+  var id = createWindow({title:title, icon:icon, width:width, autoHeight:true, resizable:false, appId:'dialog',
+    body:'<div style="font-size:12.5px;margin-bottom:10px;">'+esc(message)+'</div>'+
+    '<input class="dlg-input" style="width:100%;" value="'+esc(value)+'">'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">'+
+    '<button class="btn" data-p="cancel">Cancelar</button>'+
+    '<button class="btn btn-primary" data-p="ok">Aceptar</button></div>'});
+  var el = document.getElementById(id); if(!el) return id;
+  var input = $('.dlg-input', el); input.focus(); input.select();
+  var ok = function(){ var v = input.value; closeWindow(id); if(onOk) onOk(v); };
+  $('[data-p="ok"]', el).onclick = ok;
+  $('[data-p="cancel"]', el).onclick = function(){ closeWindow(id); };
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter') ok(); if(e.key==='Escape') closeWindow(id); e.stopPropagation(); });
+  return id;
+}
+
+function showContextMenu(x, y, items){
+  var m = $('#ctx-menu');
+  m.innerHTML = items.map(function(it,i){ return it==='-'?'<div class="ctx-sep"></div>':'<div class="ctx-item" data-i="'+i+'"><span>'+it.icon+'</span><span>'+esc(it.label)+'</span></div>'; }).join('');
+  m.style.display='block';
+  var w=m.offsetWidth, h=m.offsetHeight;
+  m.style.left = Math.min(x, innerWidth-w-6)+'px';
+  m.style.top  = Math.min(y, innerHeight-h-6)+'px';
+  $$('.ctx-item', m).forEach(function(el){ el.onclick = function(){
+    var it = items[+el.dataset.i]; hideContextMenu();
+    if(it && it.action) it.action();
+  };});
+}
+function hideContextMenu(){ var m = $('#ctx-menu'); if(m) m.style.display='none'; }
+
+document.addEventListener('contextmenu', function(e){
+  e.preventDefault();
+  var icon = e.target.closest('.desktop-icon');
+  if(icon){
+    var ic = DESKTOP_ICONS.find(function(i){ return i.id===icon.dataset.id; });
+    if(!ic) return;
+    showContextMenu(e.clientX, e.clientY, [
+      {label:'Abrir', icon:'📂', action:function(){ ic.run(); }},
+      {label:'Renombrar', icon:'✏️', action:function(){ renameDesktopIcon(ic); }},
+      '-',
+      {label:'Propiedades', icon:'ℹ️', action:function(){ showDialog({title:ic.label, icon:ic.icon, message:'Tipo: Acceso directo\nUbicación: Escritorio'}); }},
+      {label:'Restablecer posición', icon:'↩️', action:function(){ delete settings.icons[ic.id]; renderDesktopIcons(); }}
+    ]); return;
+  }
+  var win = e.target.closest('.window');
+  if(win){
+    showContextMenu(e.clientX, e.clientY, [
+      {label:'Minimizar', icon:'➖', action:function(){ minimizeWindow(win.id); }},
+      {label:'Maximizar', icon:'🔲', action:function(){ toggleMaximize(win.id); }},
+      '-',
+      {label:'Cerrar', icon:'✖️', action:function(){ closeWindow(win.id); }}
+    ]); return;
+  }
+  if(e.target.closest('#desktop')){
+    showContextMenu(e.clientX, e.clientY, [
+      {label:'Actualizar', icon:'🔄', action:function(){ renderDesktopIcons(); toast('Escritorio actualizado','','ok',1500); }},
+      '-',
+      {label:'Nueva carpeta', icon:'📁', action:function(){ createDesktopFolder(); }},
+      {label:'Nuevo documento', icon:'📄', action:function(){ createDesktopFile(); }},
+      '-',
+      {label:'Abrir en Terminal', icon:'⬛', action:function(){ openCMD(); }},
+      {label:'Cambiar fondo', icon:'🖼️', action:function(){ cycleWallpaper(); }}
+    ]);
+  }
+});
+
+function createDesktopFolder(){
+  var n = getNode('C:/Users/Usuario/Desktop'); if(!n) return;
+  var name='Nueva carpeta', i=1;
+  while(n.content[name]) name='Nueva carpeta ('+(++i)+')';
+  n.content[name]=mkdir({}); toast('Carpeta creada', name, 'ok');
+}
+function createDesktopFile(){
+  var n = getNode('C:/Users/Usuario/Desktop'); if(!n) return;
+  var name='Nuevo documento.txt', i=1;
+  while(n.content[name]) name='Nuevo documento ('+(++i)+').txt';
+  n.content[name]=mkfile(''); toast('Archivo creado', name, 'ok');
+}
+
+var DESKTOP_ICONS = [
+  {id:'pc',label:'Este equipo',icon:'💻',run:function(){ openExplorer('C:'); }},
+  {id:'recycle',label:'Papelera',icon:'🗑️',run:function(){ openRecycleBin(); }},
+  {id:'edge',label:'Microsoft Edge',icon:'🌐',run:function(){ openBrowser(); }},
+  {id:'store',label:'Microsoft Store',icon:'🛍️',run:function(){ openBoxStore(); }},
+  {id:'cmd',label:'Símbolo del sistema',icon:'⬛',run:function(){ openCMD(); }},
+  {id:'powershell',label:'PowerShell',icon:'🔷',run:function(){ openPowerShell(); }},
+  {id:'regedit',label:'Regedit',icon:'🗝️',run:function(){ openRegedit(); }},
+  {id:'taskmgr',label:'Administrador',icon:'📊',run:function(){ openTaskManager(); }},
+  {id:'notepad',label:'Bloc de notas',icon:'📝',run:function(){ openNotepad(); }},
+  {id:'calc',label:'Calculadora',icon:'🧮',run:function(){ openCalculator(); }},
+  {id:'defender',label:'Seguridad de Windows',icon:'🛡️',run:function(){ openAntivirus(); }},
+  {id:'settings',label:'Configuración',icon:'⚙️',run:function(){ openSettings(); }},
+  {id:'control',label:'Panel de control',icon:'🎛️',run:function(){ openSettings(); }},
+  {id:'update',label:'Windows Update',icon:'🔄',run:function(){ openWindowsUpdate(); }},
+  {id:'paint',label:'Paint',icon:'🎨',run:function(){ openPaint(); }},
+  {id:'devmgr',label:'Adm. dispositivos',icon:'🔧',run:function(){ openDeviceManager(); }},
+  {id:'diskmgr',label:'Adm. de discos',icon:'💽',run:function(){ openDiskManager(); }},
+  {id:'eventvwr',label:'Visor de eventos',icon:'📋',run:function(){ openEventViewer(); }},
+  {id:'services',label:'Servicios',icon:'⚡',run:function(){ openServices(); }},
+  {id:'diskpart',label:'DiskPart',icon:'💥',run:function(){ openDiskpart(); }},
+  {id:'features',label:'Caract. de Windows',icon:'🧩',run:function(){ openFeatures(); }},
+  {id:'userdel',label:'Adm. usuarios',icon:'👥',run:function(){ openUserManager(); }},
+  {id:'wiper',label:'Wiper',icon:'🧹',run:function(){ openWiper(); }}
+];
+
+function defaultIconPos(i){ var col=Math.floor(i/7), row=i%7; return {x:10+col*100, y:10+row*100}; }
+function renderDesktopIcons(){
+  var d = $('#desktop'); if(!d) return;
+  $$('.desktop-icon', d).forEach(function(e){ e.remove(); });
+  DESKTOP_ICONS.forEach(function(ic, i){
+    var pos = settings.icons[ic.id] || defaultIconPos(i);
+    var el = document.createElement('div');
+    el.className='desktop-icon';
+    el.dataset.id = ic.id;
+    el.style.left = pos.x+'px'; el.style.top = pos.y+'px';
+    var label = settings.iconLabels[ic.id] || ic.label;
+    el.innerHTML = '<div class="icon-img">'+ic.icon+'</div><div class="icon-label">'+esc(label)+'</div>';
+    el.title = label;
+    el.addEventListener('mousedown', function(e){
+      e.stopPropagation();
+      $$('.desktop-icon').forEach(function(x){ x.classList.remove('selected'); });
+      el.classList.add('selected');
+      startIconDrag(e, el, ic);
+    });
+    el.addEventListener('dblclick', function(){ playAudio('click'); ic.run(); });
+    d.appendChild(el);
+  });
+}
+function startIconDrag(e, el, ic){
+  if(e.button!==0) return;
+  var sx=e.clientX, sy=e.clientY;
+  var ox=parseInt(el.style.left,10), oy=parseInt(el.style.top,10);
+  var moved=false;
+  var move = function(ev){
+    var dx=ev.clientX-sx, dy=ev.clientY-sy;
+    if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
+    if(!moved) return;
+    el.style.left = Math.max(0, Math.min(innerWidth-100, ox+dx))+'px';
+    el.style.top  = Math.max(0, Math.min(innerHeight-150, oy+dy))+'px';
+  };
+  var up = function(){
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+    if(moved) settings.icons[ic.id] = { x:parseInt(el.style.left,10), y:parseInt(el.style.top,10) };
+  };
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
+}
+function renameDesktopIcon(ic){
+  var cur = settings.iconLabels[ic.id] || ic.label;
+  showPrompt({title:'Renombrar', message:'Nuevo nombre:', value:cur, onOk:function(v){
+    if(!v.trim()) return;
+    settings.iconLabels[ic.id] = v.trim(); renderDesktopIcons();
+  }});
+}
+
+var zTop=100, winCounter=0, activeWin=null;
+var openWindows = {}, explorerStates = {};
+
+function createWindow(opts){
+  var o = {};
+  for(var k in opts) o[k]=opts[k];
+  if(!o.title) o.title='Ventana'; if(!o.icon) o.icon='🗔'; if(!o.body) o.body='';
+  if(!o.width) o.width=640; if(!o.height) o.height=420;
+  if(o.resizable===undefined) o.resizable=true; if(o.autoHeight===undefined) o.autoHeight=false;
+  if(!o.appId) o.appId='app'; if(o.noPad===undefined) o.noPad=false;
+
+  var id = 'win-'+(++winCounter);
+  var el = document.createElement('div');
+  el.className='window opening'; el.id=id; el.dataset.app=o.appId;
+  var w = Math.min(o.width, innerWidth-30);
+  el.style.width = w+'px';
+  el.style.height = o.autoHeight?'auto':Math.min(o.height, innerHeight-110)+'px';
+  var off = (winCounter%7)*26;
+  el.style.left = Math.max(10, Math.round((innerWidth-w)/2)-80+off)+'px';
+  el.style.top  = Math.max(10, 56+off)+'px';
+  el.style.zIndex = ++zTop;
+  el.innerHTML =
+    '<div class="window-header">'+
+      '<div class="window-title"><span class="wt-icon">'+o.icon+'</span><span class="wt-text">'+esc(o.title)+'</span></div>'+
+      '<div class="window-controls">'+
+        '<button class="win-btn-action" data-win="min" title="Minimizar">─</button>'+
+        '<button class="win-btn-action" data-win="max" title="Maximizar">▢</button>'+
+        '<button class="win-btn-action win-btn-close" data-win="close" title="Cerrar">✕</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="window-body'+(o.noPad?' no-pad':'')+'"></div>'+
+    ((o.resizable && !o.autoHeight)?'<div class="rz rz-se"></div><div class="rz rz-e"></div><div class="rz rz-s"></div>':'');
+  $('.window-body', el).innerHTML = o.body;
+  document.body.appendChild(el);
+  openWindows[id] = { el:el, opts:o, min:false, max:false, prev:null };
+  addTaskButton(id); wireWindow(id); focusWindow(id);
+  el.addEventListener('animationend', function(){ el.classList.remove('opening'); }, {once:true});
+  return id;
+}
+function wireWindow(id){
+  var w = openWindows[id]; if(!w) return;
+  var el = w.el;
+  $('[data-win="close"]', el).onclick = function(e){ e.stopPropagation(); closeWindow(id); };
+  $('[data-win="min"]', el).onclick = function(e){ e.stopPropagation(); minimizeWindow(id); };
+  $('[data-win="max"]', el).onclick = function(e){ e.stopPropagation(); toggleMaximize(id); };
+  el.addEventListener('mousedown', function(){ focusWindow(id); }, true);
+  var header = $('.window-title', el);
+  header.addEventListener('pointerdown', function(e){
+    if(e.target.closest('.win-btn-action')) return;
+    if(w.max) return;
+    e.preventDefault(); focusWindow(id);
+    var sx=e.clientX, sy=e.clientY, ox=el.offsetLeft, oy=el.offsetTop;
+    var move = function(ev){
+      el.style.left = (ox+ev.clientX-sx)+'px';
+      el.style.top  = Math.max(0, oy+ev.clientY-sy)+'px';
+    };
+    var up = function(){
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  });
+  header.addEventListener('dblclick', function(e){ if(e.target.closest('.win-btn-action')) return; toggleMaximize(id); });
+  $$('.rz', el).forEach(function(h){
+    h.addEventListener('pointerdown', function(e){
+      e.preventDefault(); e.stopPropagation(); focusWindow(id);
+      var dir = h.classList.contains('rz-se')?'se':h.classList.contains('rz-e')?'e':'s';
+      var sx=e.clientX, sy=e.clientY, sw=el.offsetWidth, sh=el.offsetHeight;
+      var move = function(ev){
+        if(dir.indexOf('e')>-1) el.style.width = Math.max(320, sw+ev.clientX-sx)+'px';
+        if(dir.indexOf('s')>-1) el.style.height = Math.max(200, sh+ev.clientY-sy)+'px';
+      };
+      var up = function(){ document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); };
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up);
+    });
+  });
+}
+function addTaskButton(id){
+  var w = openWindows[id]; if(!w) return;
+  var btn = document.createElement('button');
+  btn.className='taskbar-item running';
+  btn.innerHTML = '<span class="tb-icon">'+w.opts.icon+'</span>';
+  btn.title = w.opts.title;
+  btn.onclick = function(){
+    var ww = openWindows[id]; if(!ww) return;
+    if(activeWin===id && !ww.min) minimizeWindow(id); else focusWindow(id);
+  };
+  $('#taskbar-apps').appendChild(btn); w.btn = btn;
+}
+function focusWindow(id){
+  var w = openWindows[id]; if(!w) return;
+  if(w.min) restoreWindow(id, true);
+  w.el.style.zIndex = ++zTop; activeWin = id;
+  updateTaskbar();
+}
+function minimizeWindow(id){
+  var w = openWindows[id]; if(!w || w.min) return;
+  w.min = true; w.el.style.display='none';
+  if(activeWin===id) activeWin=null;
+  updateTaskbar();
+}
+function restoreWindow(id, silent){
+  var w = openWindows[id]; if(!w) return;
+  w.min=false; w.el.style.display='flex';
+  if(!silent){ w.el.style.zIndex=++zTop; activeWin=id; }
+  updateTaskbar();
+}
+function toggleMaximize(id){
+  var w = openWindows[id]; if(!w) return;
+  var el = w.el;
+  if(!w.max){
+    w.prev = { left:el.style.left, top:el.style.top, width:el.style.width, height:el.style.height };
+    el.style.left='0'; el.style.top='0'; el.style.width='100%'; el.style.height=(innerHeight-48)+'px';
+    el.classList.add('maximized'); w.max=true;
+  } else {
+    el.style.left=w.prev.left; el.style.top=w.prev.top; el.style.width=w.prev.width; el.style.height=w.prev.height;
+    el.classList.remove('maximized'); w.max=false;
+  }
+}
+function closeWindow(id){
+  var w = openWindows[id]; if(!w) return;
+  if(w.opts.appId==='explorer') delete explorerStates[id];
+  w.el.remove(); if(w.btn) w.btn.remove();
+  delete openWindows[id];
+  if(activeWin===id) activeWin=null;
+  updateTaskbar();
+}
+function updateTaskbar(){
+  Object.keys(openWindows).forEach(function(id){
+    var w = openWindows[id];
+    if(w.btn) w.btn.classList.toggle('active', id===activeWin && !w.min);
+  });
+}
+function showDesktop(){
+  var anyVisible = false;
+  Object.keys(openWindows).forEach(function(id){ if(!openWindows[id].min) anyVisible=true; });
+  Object.keys(openWindows).forEach(function(id){ if(anyVisible) minimizeWindow(id); else restoreWindow(id,true); });
+}
+function closeAllWindows(){ Object.keys(openWindows).forEach(function(id){ closeWindow(id); }); }
+
+function toggleStart(){
+  var m = $('#start-menu');
+  var open = m.classList.toggle('open');
+  if(open){ renderStartList(); $('#start-search-input').value=''; setTimeout(function(){ $('#start-search-input').focus(); }, 60); }
+}
+function closeStart(){ $('#start-menu').classList.remove('open'); }
+function toggleAllApps(){ renderStartList(''); }
+function renderStartList(filter){
+  filter = filter || '';
+  var list = $('#start-list'); if(!list) return;
+  var items = Object.keys(APPS).filter(function(k){ return APPS[k].name.toLowerCase().indexOf(filter.toLowerCase())>-1; });
+  list.innerHTML = items.length
+    ? items.map(function(k){ var a=APPS[k]; return '<div class="start-item" data-app="'+k+'"><span class="si-icon">'+a.icon+'</span><span class="si-name">'+esc(a.name)+'</span></div>'; }).join('')
+    : '<div style="padding:20px;font-size:13px;color:var(--text-dim);grid-column:1/-1;">Sin resultados</div>';
+  $$('.start-item', list).forEach(function(el){ el.onclick = function(){ closeStart(); APPS[el.dataset.app].run(); }; });
+}
+
+function toggleFlyout(id){
+  var f = document.getElementById(id); if(!f) return;
+  var wasOpen = f.classList.contains('open');
+  $$('.flyout').forEach(function(x){ x.classList.remove('open'); });
+  if(!wasOpen) f.classList.add('open');
+}
+function updateClock(){
+  var d = new Date();
+  var t = $('#clock-time'), dt = $('#clock-date');
+  if(t) t.textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  if(dt) dt.textContent = d.toLocaleDateString([], {day:'2-digit', month:'2-digit', year:'numeric'});
+  var ft = $('#fly-time');
+  if(ft){
+    ft.textContent = d.toLocaleTimeString();
+    var fd = $('#fly-date'); if(fd) fd.textContent = d.toLocaleDateString([], {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  }
+}
+function renderMiniCalendar(){
+  var c = $('#mini-calendar'); if(!c) return;
+  var now = new Date(), year = now.getFullYear(), month = now.getMonth();
+  var first = new Date(year, month, 1).getDay();
+  var days = new Date(year, month+1, 0).getDate();
+  var html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;">';
+  ['D','L','M','X','J','V','S'].forEach(function(d){ html += '<b style="opacity:.6;font-size:11px;padding:4px;">'+d+'</b>'; });
+  for(var i=0;i<first;i++) html += '<span></span>';
+  for(var d=1;d<=days;d++){
+    var today = d===now.getDate();
+    html += '<span style="padding:5px 0;border-radius:4px;font-size:12px;'+(today?'background:var(--accent);color:#fff;font-weight:700;':'')+'">'+d+'</span>';
+  }
+  html += '</div>'; c.innerHTML = html;
+}
+function applySettings(){
+  document.body.classList.toggle('light', settings.theme==='light');
+  document.documentElement.style.setProperty('--accent', settings.accent);
+  var d = $('#desktop'); if(d) d.className = settings.wallpaper + (safeMode?' safe-mode':'');
+  var su = $('#start-username'); if(su) su.textContent = settings.username;
+  var lu = $('#lock-username'); if(lu) lu.textContent = settings.username;
+  var ts = $('#tray-sound'); if(ts) ts.textContent = (settings.sound && !damage.audioFailed) ? '🔊' : '🔇';
+  var vs = $('#vol-state'); if(vs) vs.textContent = (settings.sound && !damage.audioFailed) ? 'Activados' : 'Silenciados';
+  applyDamageVisuals();
+}
+function applyDamageVisuals(){
+  document.body.classList.toggle('no-gpu', !!damage.gpuFailed);
+  document.body.classList.toggle('no-explorer', !!damage.explorerDead);
+  document.body.classList.toggle('corrupt-text', !!damage.fontCorrupt);
+  document.body.classList.toggle('no-audio', !!damage.audioFailed);
+  document.body.classList.toggle('no-network', !!damage.networkFailed);
+  document.body.classList.toggle('no-print', !!damage.printDead);
+  document.body.classList.toggle('no-wmi', !!damage.wmiDead);
+  document.body.classList.toggle('no-services', !!damage.servicesDead);
+  document.body.classList.toggle('no-tasks', !!damage.tasksDead);
+  document.body.classList.toggle('no-events', !!damage.eventsDead);
+  document.body.classList.toggle('no-desktop-icons', !!damage.desktopGone);
+  document.body.classList.toggle('low-mem', !!damage.lowMem);
+  document.body.classList.toggle('overheat', !!damage.overheat);
+  var bs = $('#black-screen'); if(bs) bs.classList.toggle('open', !!damage.explorerDead);
+}
+function setVolume(v){
+  settings.volume = +v;
+  var p = $('#vol-pct'); if(p) p.textContent = v+'%';
+  if(settings.volume===0){ settings.sound=false; } else if(!settings.sound && settings.volume>0){ settings.sound=true; }
+  applySettings();
+}
+function toggleSound(){
+  settings.sound = !settings.sound; applySettings();
+  if(settings.sound) playAudio('beep');
+  toast('Sonido', settings.sound?'Activado':'Silenciado','info',1600);
+}
+function cycleWallpaper(){
+  var list = ['wp-1','wp-2','wp-3','wp-4','wp-5','wp-6','wp-7','wp-8'];
+  var i = list.indexOf(settings.wallpaper);
+  settings.wallpaper = list[(i+1)%list.length];
+  applySettings(); toast('Fondo aplicado', settings.wallpaper,'ok',1800);
+}
+
+/* ============ EXPLORER ============ */
+function openExplorer(path){
+  path = path || 'C:';
+  if(isCDestroyed){ showDialog({title:'Error del sistema', icon:'⛔', message:'El disco C: ha sido destruido.'}); playAudio('error'); return; }
+  var existing = null;
+  Object.keys(openWindows).forEach(function(wid){
+    if(openWindows[wid].opts.appId==='explorer' && explorerStates[wid]){ navigateExplorer(wid, path); focusWindow(wid); existing=wid; }
+  });
+  if(existing) return existing;
+  var id = createWindow({title:'Explorador - '+path, icon:'📁', width:800, height:500, appId:'explorer', noPad:true,
+    body:'<div class="exp-toolbar">'+
+      '<button class="btn" data-nav="back">◀</button>'+
+      '<button class="btn" data-nav="fwd">▶</button>'+
+      '<button class="btn" data-nav="up">▲</button>'+
+      '<div class="crumbs"></div>'+
+      '<input class="exp-search" placeholder="🔍 Buscar..." data-nav="search">'+
+      '<button class="btn" data-nav="newfolder">📁+</button>'+
+      '<button class="btn" data-nav="newfile">📄+</button>'+
+    '</div>'+
+    '<div class="exp-list" style="overflow:auto;flex:1;"></div>'+
+    '<div class="status-bar"></div>'});
+  var el = document.getElementById(id);
+  var bodyEl = $('.window-body', el);
+  bodyEl.style.display='flex'; bodyEl.style.flexDirection='column'; bodyEl.style.background='var(--win-bg)';
+  explorerStates[id] = { path:path, history:[path], hIndex:0, search:'', sortBy:'name', sortAsc:true };
+  wireExplorer(id); renderExplorer(id);
+  return id;
+}
+function wireExplorer(id){
+  var el = document.getElementById(id); if(!el) return;
+  var body = $('.window-body', el);
+  var st = explorerStates[id]; if(!st) return;
+  body.addEventListener('click', function(e){
+    var nav = e.target.closest('[data-nav]');
+    if(nav){
+      var a = nav.dataset.nav;
+      if(a==='back' && st.hIndex>0){ st.hIndex--; st.path=st.history[st.hIndex]; renderExplorer(id); }
+      if(a==='fwd' && st.hIndex<st.history.length-1){ st.hIndex++; st.path=st.history[st.hIndex]; renderExplorer(id); }
+      if(a==='up'){ var p = getParentPath(st.path); if(p!==st.path) navigateExplorer(id, p); }
+      if(a==='newfolder') newFolderIn(id);
+      if(a==='newfile') newFileIn(id);
+      return;
+    }
+    var crumb = e.target.closest('.crumb');
+    if(crumb){ navigateExplorer(id, crumb.dataset.path); return; }
+    var th = e.target.closest('th[data-sort]');
+    if(th){
+      var k = th.dataset.sort;
+      if(st.sortBy===k) st.sortAsc = !st.sortAsc; else { st.sortBy=k; st.sortAsc=true; }
+      renderExplorer(id); return;
+    }
+    var act = e.target.closest('[data-act]');
+    if(act){
+      var name = act.dataset.name, full = joinPath(st.path, name);
+      if(act.dataset.act==='del') deleteEntry(full, id);
+      if(act.dataset.act==='ren') renameEntry(full, id);
+      return;
+    }
+    var row = e.target.closest('tr[data-name]');
+    if(row){ $$('tr', body).forEach(function(r){ r.classList.remove('sel'); }); row.classList.add('sel'); }
+  });
+  body.addEventListener('dblclick', function(e){
+    var row = e.target.closest('tr[data-name]');
+    if(!row) return;
+    var full = joinPath(st.path, row.dataset.name);
+    var node = getNode(full);
+    if(!node) return;
+    if(node.type==='dir') navigateExplorer(id, full); else openFileWith(full);
+  });
+  var s = $('[data-nav="search"]', body);
+  if(s){ s.addEventListener('input', function(){ st.search=s.value; renderExplorer(id); }); s.addEventListener('keydown', function(e){ e.stopPropagation(); }); }
+}
+function navigateExplorer(id, path){
+  var st = explorerStates[id]; if(!st) return;
+  st.path = path; st.history = st.history.slice(0, st.hIndex+1); st.history.push(path);
+  st.hIndex = st.history.length-1; st.search=''; renderExplorer(id);
+}
+function renderExplorer(id){
+  var el = document.getElementById(id); if(!el) return;
+  var st = explorerStates[id]; if(!st) return;
+  var body = $('.window-body', el); if(!body) return;
+  var listEl = $('.exp-list', body), crumbsEl = $('.crumbs', body), statusEl = $('.status-bar', body);
+  var parts = splitPath(st.path);
+  var curPath = '';
+  crumbsEl.innerHTML = parts.map(function(p, idx){
+    curPath += (idx===0?'':'/') + p;
+    return '<span class="crumb" data-path="'+curPath+'">'+esc(p)+'</span>'+(idx<parts.length-1?'<span class="crumb-sep">›</span>':'');
+  }).join('');
+  var node = getNode(st.path);
+  if(!node || node.type!=='dir'){
+    listEl.innerHTML='<div style="padding:20px;color:var(--text-dim);">Carpeta no disponible o destruida.</div>';
+    if(statusEl) statusEl.textContent='0 elementos'; return;
+  }
+  var items = Object.keys(node.content).map(function(name){
+    var item = node.content[name];
+    return { name:name, type:item.type, size: item.type==='file' ? (item.size || 0) : 0, modified: item.modified || Date.now(), item:item };
+  });
+  if(st.search) items = items.filter(function(i){ return i.name.toLowerCase().indexOf(st.search.toLowerCase())>-1; });
+  items.sort(function(a,b){
+    if(a.type!==b.type) return a.type==='dir'?-1:1;
+    var va=a[st.sortBy], vb=b[st.sortBy];
+    if(typeof va==='string') return st.sortAsc?va.localeCompare(vb):vb.localeCompare(va);
+    return st.sortAsc?va-vb:vb-va;
+  });
+  listEl.innerHTML = '<table class="file-table"><thead><tr><th data-sort="name">Nombre</th><th data-sort="modified">Modificado</th><th data-sort="type">Tipo</th><th data-sort="size">Tamaño</th><th>Acciones</th></tr></thead><tbody>'+
+    items.map(function(i){
+      var icon = i.type==='dir'?'📁':(i.name.indexOf('.exe')>-1?'⚙️':i.name.indexOf('.dll')>-1?'🧩':i.name.indexOf('.sys')>-1?'🔧':'📄');
+      return '<tr data-name="'+esc(i.name)+'">'+
+        '<td><div class="fname"><span>'+icon+'</span><span>'+esc(i.name)+'</span></div></td>'+
+        '<td>'+fmtDate(i.modified)+'</td>'+
+        '<td>'+(i.type==='dir'?'Carpeta':'Archivo')+'</td>'+
+        '<td>'+(i.type==='dir'?'':fmtSize(i.size))+'</td>'+
+        '<td><button class="btn" style="padding:2px 6px;font-size:11px;margin-right:4px;" data-act="ren" data-name="'+esc(i.name)+'">✏️</button>'+
+        '<button class="btn-danger" style="padding:2px 6px;font-size:11px;" data-act="del" data-name="'+esc(i.name)+'">🗑️</button></td>'+
+      '</tr>';
+    }).join('') + '</tbody></table>';
+  if(statusEl) statusEl.textContent = items.length + ' elementos';
+}
+function newFolderIn(id){
+  var st = explorerStates[id]; if(!st) return;
+  var n = getNode(st.path); if(!n || n.type!=='dir') return;
+  var name='Nueva carpeta', i=1;
+  while(n.content[name]) name='Nueva carpeta ('+(++i)+')';
+  n.content[name]=mkdir({}); renderExplorer(id);
+}
+function newFileIn(id){
+  var st = explorerStates[id]; if(!st) return;
+  var n = getNode(st.path); if(!n || n.type!=='dir') return;
+  var name='Nuevo archivo.txt', i=1;
+  while(n.content[name]) name='Nuevo archivo ('+(++i)+').txt';
+  n.content[name]=mkfile(''); renderExplorer(id);
+}
+
+function deleteEntry(full, id){
+  var parts = splitPath(full);
+  var name = parts.pop();
+  var parentPath = parts.join('/') || 'C:';
+  var p = getNode(parentPath);
+  if(!p || !p.content[name]) return;
+  var normalized = 'C:/' + splitPath(full).slice(1).join('/');
+  var upperFull = normalized.toUpperCase();
+
+  var found = null;
+  Object.keys(CRITICAL_FILES).forEach(function(key){ if(key.toUpperCase() === upperFull) found = {key:key, reaction:CRITICAL_FILES[key]}; });
+  if(found){
+    var parent = getNode(getParentPath(found.key));
+    var fileName = splitPath(found.key).pop();
+    if(parent && parent.content[fileName]) delete parent.content[fileName];
+    if(id) renderExplorer(id);
+    reactToDestruction(found.reaction, found.key);
+    return;
+  }
+  var found2 = null;
+  Object.keys(PROTECTED_PATHS).forEach(function(key){ if(key.toUpperCase() === upperFull) found2 = {key:key, reaction:PROTECTED_PATHS[key]}; });
+  if(found2){
+    var reaction = found2.reaction;
+    if(reaction.inUse){
+      playAudio('error');
+      showDialog({title:'No se puede eliminar la carpeta', icon:'⚠️',
+        message:'La carpeta "'+name+'" no se puede eliminar porque está en uso.\n\nCierra cualquier programa que la esté usando e inténtalo de nuevo.',
+        buttons:[{label:'Reintentar', onClick:function(){ deleteEntry(full,id); }},{label:'Cancelar',primary:true}]});
+      return;
+    }
+    var parent2 = getNode(getParentPath(found2.key));
+    var fileName2 = splitPath(found2.key).pop();
+    if(parent2 && parent2.content[fileName2]) delete parent2.content[fileName2];
+    if(id) renderExplorer(id);
+    reactToDestruction(reaction, found2.key);
+    return;
+  }
+  recycleBin.push({ path:full, data:p.content[name], deletedAt:Date.now() });
+  delete p.content[name];
+  if(id) renderExplorer(id);
+  toast('Eliminado', name + ' → Papelera', 'warn', 2000);
+}
+
+function reactToDestruction(reaction, path){
+  var shortName = splitPath(path).pop();
+  if(reaction.bsod){
+    playAudio('error');
+    toast('Error crítico del sistema', 'Se eliminó '+shortName+'. El sistema se detendrá.', 'error', 3500);
+    setTimeout(function(){ triggerBSOD(reaction.bsod); }, 900);
+    return;
+  }
+  if(reaction.effect){
+    applyEffect(reaction.effect);
+    toast('Error del sistema', 'Componente eliminado: '+shortName, 'error', 3500);
+    return;
+  }
+  if(reaction.warning){
+    toast('Advertencia del sistema', 'Se eliminó '+shortName+'.', 'warn', 4000);
+    return;
+  }
+  toast('Eliminado', shortName, 'warn', 2000);
+}
+
+function applyEffect(effect){
+  if(effect==='no-explorer'){ if(damage.explorerDead) return; damage.explorerDead=true; closeAllWindows(); applyDamageVisuals(); return; }
+  if(effect==='corrupt-text'){ damage.fontCorrupt=true; applyDamageVisuals(); return; }
+  if(effect==='no-gpu'){ damage.gpuFailed=true; applyDamageVisuals(); setTimeout(function(){ triggerBSOD('VIDEO_TDR_FAILURE'); }, 2200); return; }
+  if(effect==='no-audio'){ damage.audioFailed=true; settings.sound=false; applySettings(); return; }
+  if(effect==='no-network'){ damage.networkFailed=true; damage.netAdapterDisabled=true; applyDamageVisuals(); return; }
+  if(effect==='desktop-gone'){ damage.desktopGone=true; applyDamageVisuals(); return; }
+  if(effect==='recovery-dead'){ damage.recoveryDead=true; return; }
+  if(effect==='defender-dead'){ damage.defenderDead=true; return; }
+  if(effect==='no-os'){ damage.bootloaderGone=true; setTimeout(function(){ showNoOS(); }, 1200); return; }
+  if(effect==='no-print'){ damage.printDead=true; applyDamageVisuals(); return; }
+  if(effect==='no-wmi'){ damage.wmiDead=true; applyDamageVisuals(); return; }
+  if(effect==='no-services'){ damage.servicesDead=true; applyDamageVisuals(); return; }
+  if(effect==='no-tasks'){ damage.tasksDead=true; applyDamageVisuals(); return; }
+  if(effect==='no-events'){ damage.eventsDead=true; applyDamageVisuals(); return; }
+  if(effect==='no-logs'){ damage.logsDead=true; return; }
+  if(effect==='update-broken'){ damage.updateBroken=true; return; }
+  if(effect==='low-mem'){ damage.lowMem=true; applyDamageVisuals(); return; }
+  if(effect==='overheat'){ damage.overheat=true; applyDamageVisuals(); return; }
+  if(effect==='registry-corrupt'){ damage.registryCorrupt=true; setTimeout(function(){ triggerBSOD('REGISTRY_FILTER_DRIVER_EXCEPTION'); }, 1000); return; }
+  if(effect==='disk-wiped'){ damage.diskWiped=true; isCDestroyed=true; setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1200); return; }
+  if(effect==='gpedit-lock'){ damage.groupPolicyLock=true; toast('Directiva aplicada', 'Muchas funciones han sido bloqueadas.', 'warn', 4000); return; }
+  if(effect==='admin-deleted'){ damage.adminDeleted=true; toast('Cuenta eliminada', 'El administrador ha sido eliminado.', 'error', 4000); return; }
+  if(effect==='dotnet-removed'){ damage.dotnetRemoved=true; toast('.NET eliminado', 'Apps .NET no arrancarán.', 'warn', 4000); return; }
+  if(effect==='exec-policy-open'){ damage.executionPolicyOpen=true; toast('Política abierta', 'Scripts sin restricciones.', 'warn', 4000); return; }
+}
+
+function showNoOS(){
+  var s = $('#no-os-screen'); s.style.display='flex';
+  var out = $('#no-os-output'); if(out) out.textContent = 'ERR: Bootloader not found. Presiona R para recuperar.';
+  var handler = function(ev){
+    if(ev.key==='r' || ev.key==='R'){
+      if(damage.recoveryDead) out.textContent = 'BoxOS Recovery fue eliminado. Reinicia la página.';
+      else { out.textContent='Iniciando BoxOS Recovery...'; setTimeout(function(){ location.reload(); }, 1800); }
+    }
+  };
+  document.addEventListener('keydown', handler);
+}
+
+function renameEntry(full, id){
+  var parts = splitPath(full);
+  var oldName = parts.pop();
+  var parentPath = parts.join('/') || 'C:';
+  var p = getNode(parentPath); if(!p || !p.content[oldName]) return;
+  showPrompt({title:'Renombrar', message:'Nuevo nombre:', value:oldName, onOk:function(newName){
+    if(!newName || newName===oldName) return;
+    p.content[newName] = p.content[oldName]; delete p.content[oldName];
+    if(id) renderExplorer(id);
+  }});
+}
+
+function openFileWith(full){
+  var node = getNode(full); if(!node) return;
+  if(full.toLowerCase().indexOf('.txt')>-1 || node.type==='file') openNotepad(full, node.content);
+  else toast('Abrir archivo', 'No hay app predeterminada.', 'info');
+}
+
+/* ============ CMD ============ */
+function openCMD(){
+  var currentDir = 'C:\\Windows\\System32';
+  var id = createWindow({title:'Símbolo del sistema', icon:'⬛', width:680, height:420, appId:'cmd', noPad:true,
+    body:'<div class="cmd-body">'+
+      '<div class="cmd-output">BoxOS 11 [Versión 10.0.22000.1]\n(c) BoxOS Corp.\n\nEscribe "help" para ver comandos.\n</div>'+
+      '<div class="cmd-input-line"><span class="cmd-prompt">'+currentDir+'&gt;</span><input class="cmd-input" autofocus></div>'+
+    '</div>'});
+  var el = document.getElementById(id); if(!el) return id;
+  var input = $('.cmd-input', el), output = $('.cmd-output', el), prompt = $('.cmd-prompt', el);
+  input.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){
+      var cmd = input.value.trim();
+      output.textContent += prompt.textContent + cmd + '\n';
+      input.value = '';
+      execCMDCommand(cmd, output, prompt);
+      output.scrollTop = output.scrollHeight;
+    }
+  });
+  return id;
+}
+
+function execCMDCommand(cmdStr, output, promptEl){
+  var parts = cmdStr.split(' ').filter(Boolean); if(!parts.length) return;
+  var cmd = parts[0].toLowerCase();
+  var arg = parts.slice(1).join(' ');
+  var lowerArg = arg.toLowerCase().replace(/\\/g,'/');
+
+  if(cmd==='help'){
+    output.textContent += 'Comandos: help, cls, dir, echo, ver, del, rmdir, format, shutdown, taskkill, bsod, sfc, exit,\n'+
+      'diskpart, chkdsk, bcdedit, cipher, reg, net, takeown, icacls, attrib, sc, wmic,\n'+
+      'powercfg, netsh, vssadmin, dism, bcdboot, mountvol, compact, wbadmin, fsutil, matrix\n\n';
+  }
+  else if(cmd==='cls'||cmd==='clear'){ output.textContent=''; }
+  else if(cmd==='ver'){ output.textContent += 'BoxOS 11 Ultra Destructible [10.0.22000]\n\n'; }
+  else if(cmd==='echo'){ output.textContent += arg+'\n\n'; }
+  else if(cmd==='dir'){
+    var node = getNode('C:/Windows/System32');
+    if(node && node.content){
+      var text = ' Directorio de C:\\Windows\\System32\n\n';
+      Object.keys(node.content).forEach(function(k){ var v=node.content[k]; text += (v.type==='dir'?'<DIR>       ':'       '+fmtSize(v.size||0)+' ')+k+'\n'; });
+      output.textContent += text + '\n';
+    } else output.textContent += ' Ruta no encontrada.\n\n';
+  }
+  else if(cmd==='del'||cmd==='rm'||cmd==='erase'){
+    if(!arg){ output.textContent += 'Falta nombre.\n\n'; return; }
+    var target = arg;
+    if(target.toLowerCase().indexOf('system32')>-1) target = 'C:/Windows/System32';
+    else if(target.toLowerCase().indexOf('windows')>-1) target = 'C:/Windows';
+    else if(target.toLowerCase().indexOf('bootmgr')>-1) target = 'C:/bootmgr';
+    else if(target.indexOf('C:')!==0) target = 'C:/Windows/System32/' + target;
+    var norm = 'C:/' + splitPath(target).slice(1).join('/');
+    var upper = norm.toUpperCase();
+    var handled = false;
+    Object.keys(CRITICAL_FILES).forEach(function(key){
+      if(!handled && key.toUpperCase()===upper){
+        output.textContent += 'Eliminando ' + key + '...\n';
+        setTimeout(function(){ reactToDestruction(CRITICAL_FILES[key], key); }, 400);
+        handled = true;
+      }
+    });
+    if(!handled) Object.keys(PROTECTED_PATHS).forEach(function(key){
+      if(!handled && key.toUpperCase()===upper){
+        output.textContent += 'Eliminando ' + key + '...\n';
+        setTimeout(function(){ reactToDestruction(PROTECTED_PATHS[key], key); }, 400);
+        handled = true;
+      }
+    });
+    if(!handled){
+      var node2 = getNode(target);
+      if(node2){ deleteEntry(target); output.textContent += 'Eliminado: '+target+'\n\n'; }
+      else output.textContent += 'No encontrado "'+arg+'".\n\n';
+    }
+  }
+  else if(cmd==='rmdir'||cmd==='rd'){
+    var t = arg.replace(/\/s|\/q/g,'').trim();
+    if(t.toLowerCase().indexOf('windows')>-1 || t.toLowerCase().indexOf('system32')>-1){
+      output.textContent += 'Eliminando árbol...\n';
+      setTimeout(function(){ triggerBSOD('CRITICAL_PROCESS_DIED'); }, 800);
+    } else output.textContent += 'El directorio no está vacío.\n\n';
+  }
+  else if(cmd==='format'){ output.textContent += 'Formateando...\n'; setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1200); }
+  else if(cmd==='shutdown'){
+    if(lowerArg.indexOf('/r')>-1){ output.textContent += 'Reiniciando...\n'; setTimeout(restartOS, 800); }
+    else if(lowerArg.indexOf('/s')>-1){ output.textContent += 'Apagando...\n'; setTimeout(shutdownOS, 800); }
+    else output.textContent += 'Uso: shutdown /s | /r\n\n';
+  }
+  else if(cmd==='taskkill'){
+    if(lowerArg.indexOf('system')>-1||lowerArg.indexOf('csrss')>-1||lowerArg.indexOf('winlogon')>-1||lowerArg.indexOf('lsass')>-1||lowerArg.indexOf('services.exe')>-1){
+      output.textContent += 'ERROR: Proceso crítico.\n';
+      setTimeout(function(){ triggerBSOD('CRITICAL_PROCESS_DIED'); }, 900);
+    } else if(lowerArg.indexOf('explorer.exe')>-1){ output.textContent += 'explorer.exe terminado.\n'; applyEffect('no-explorer'); }
+    else output.textContent += 'Proceso no encontrado.\n\n';
+  }
+  else if(cmd==='sfc'){
+    if(damage.explorerDead||damage.fontCorrupt||damage.gpuFailed){
+      output.textContent += 'Verificando...\n';
+      setTimeout(function(){ output.textContent += 'WRP encontró archivos dañados pero no puede repararlos.\n\n'; }, 1500);
+    } else {
+      output.textContent += 'Verificando...\n';
+      setTimeout(function(){ output.textContent += 'WRP no encontró infracciones.\n\n'; }, 1500);
+    }
+  }
+  else if(cmd==='bsod'){ triggerBSOD('MANUAL_USER_INITIATED_CRASH'); }
+  else if(cmd==='matrix'){ output.textContent += '01010101010101010101010101010101010101\n10101010101010101010101010101010101010\n'; }
+  else if(cmd==='exit'){ var win = output.closest('.window'); if(win) closeWindow(win.id); }
+  else if(cmd==='diskpart'){
+    output.textContent += 'DiskPart v10.0\nDISKPART> list disk\n\n  Disco 0    En línea   2000 GB\n\nDISKPART> clean\n';
+    setTimeout(function(){ output.textContent += 'DiskPart ha limpiado el disco.\n'; applyEffect('disk-wiped'); }, 1500);
+  }
+  else if(cmd==='chkdsk'){
+    if(lowerArg.indexOf('/f')>-1||lowerArg.indexOf('/r')>-1){
+      output.textContent += 'Corrigiendo errores...\n';
+      setTimeout(function(){ output.textContent += 'Errores críticos. Sistema corrupto.\n'; triggerBSOD('NTFS_FILE_SYSTEM'); }, 2000);
+    } else output.textContent += 'No se especificó /F.\n\n';
+  }
+  else if(cmd==='bcdedit'){
+    if(lowerArg.indexOf('/delete')>-1){ output.textContent += 'Eliminando entradas de arranque...\n'; setTimeout(function(){ applyEffect('no-os'); }, 1200); }
+    else output.textContent += 'Identificador {bootmgr}\nDevice partition=C:\n\n';
+  }
+  else if(cmd==='cipher'){
+    if(lowerArg.indexOf('/w')>-1){ output.textContent += 'Sobrescribiendo espacio libre...\n'; setTimeout(function(){ applyEffect('disk-wiped'); }, 2000); }
+    else output.textContent += 'Uso: cipher /w:<dir>\n\n';
+  }
+  else if(cmd==='reg'){
+    if(lowerArg.indexOf('delete')>-1){ output.textContent += 'Acceso denegado. Forzando...\n'; setTimeout(function(){ applyEffect('registry-corrupt'); }, 900); }
+    else output.textContent += 'Uso: reg delete <clave>\n\n';
+  }
+  else if(cmd==='net'){
+    if(lowerArg.indexOf('user')>-1 && (lowerArg.indexOf('/delete')>-1 || lowerArg.indexOf('/add')>-1)){
+      output.textContent += 'Modificando cuentas...\n'; setTimeout(function(){ applyEffect('admin-deleted'); }, 900);
+    } else if(lowerArg.indexOf('stop')>-1){ output.textContent += 'Deteniendo servicios...\n'; setTimeout(function(){ applyEffect('no-services'); }, 800); }
+    else output.textContent += 'Uso: net user <nombre> /delete\n\n';
+  }
+  else if(cmd==='takeown'){ output.textContent += 'Tomando posesión...\n'; setTimeout(function(){ output.textContent += 'ERROR: C:\\Windows protegido.\n\n'; }, 900); }
+  else if(cmd==='icacls'){ output.textContent += 'Cambiando permisos...\n'; setTimeout(function(){ output.textContent += 'Permisos modificados.\n\n'; }, 900); }
+  else if(cmd==='attrib'){ if(lowerArg.indexOf('-s')>-1||lowerArg.indexOf('-h')>-1){ output.textContent += 'Atributos removidos.\n\n'; } else output.textContent += 'Uso: attrib -s -h -r <file>\n\n'; }
+  else if(cmd==='sc'){
+    if(lowerArg.indexOf('delete')>-1){ output.textContent += 'Falló. Forzando...\n'; setTimeout(function(){ applyEffect('no-services'); }, 900); }
+    else output.textContent += 'Uso: sc delete <servicio>\n\n';
+  }
+  else if(cmd==='wmic'){ output.textContent += 'WMI ejecutando...\n'; setTimeout(function(){ output.textContent += 'ERROR: WMI detenido.\n'; applyEffect('no-wmi'); }, 1200); }
+  else if(cmd==='powercfg'){
+    if(lowerArg.indexOf('/hibernate off')>-1){ output.textContent += 'Hibernación deshabilitada.\n\n'; }
+    else if(lowerArg.indexOf('max')>-1){ output.textContent += 'Máximo rendimiento.\n'; setTimeout(function(){ applyEffect('overheat'); }, 1000); }
+    else output.textContent += 'Uso: powercfg /hibernate off\n\n';
+  }
+  else if(cmd==='netsh'){
+    if(lowerArg.indexOf('disable')>-1){ output.textContent += 'Deshabilitando red...\n'; setTimeout(function(){ applyEffect('no-network'); }, 1000); }
+    else output.textContent += 'Uso: netsh interface set interface disable\n\n';
+  }
+  else if(cmd==='vssadmin'){
+    if(lowerArg.indexOf('delete')>-1){ output.textContent += 'Eliminando copias de sombra...\n'; setTimeout(function(){ toast('Copias eliminadas', 'Sin puntos de restauración.', 'error', 3000); }, 1500); }
+    else output.textContent += 'Uso: vssadmin delete shadows /all\n\n';
+  }
+  else if(cmd==='dism'){
+    if(lowerArg.indexOf('remove')>-1||lowerArg.indexOf('uninstall')>-1){ output.textContent += 'Desinstalando...\n'; setTimeout(function(){ applyEffect('dotnet-removed'); }, 1500); }
+    else if(lowerArg.indexOf('restorehealth')>-1){ output.textContent += 'Restaurando...\n'; setTimeout(function(){ output.textContent += 'Operación completada.\n\n'; }, 2000); }
+    else output.textContent += 'Uso: dism /online /remove-capability\n\n';
+  }
+  else if(cmd==='bcdboot'){ output.textContent += 'Copiando archivos de arranque...\n'; setTimeout(function(){ output.textContent += 'ERROR.\n'; applyEffect('no-os'); }, 1800); }
+  else if(cmd==='mountvol'){
+    if(lowerArg.indexOf('/d')>-1||lowerArg.indexOf('/p')>-1){ output.textContent += 'Desmontando...\n'; setTimeout(function(){ triggerBSOD('INACCESSIBLE_BOOT_DEVICE'); }, 1200); }
+    else output.textContent += 'Uso: mountvol <letra> /d\n\n';
+  }
+  else if(cmd==='compact'){ output.textContent += 'Comprimiendo...\n'; setTimeout(function(){ output.textContent += 'Archivos dañados.\n'; damage.fontCorrupt=true; applyDamageVisuals(); }, 1500); }
+  else if(cmd==='subst'){ output.textContent += 'Uso: subst <letra>: <ruta>\n\n'; }
+  else if(cmd==='wbadmin'){ output.textContent += 'Uso: wbadmin delete catalog\n\n'; }
+  else if(cmd==='fsutil'){
+    if(lowerArg.indexOf('dirty')>-1 && lowerArg.indexOf('set')>-1){ output.textContent += 'Marcando volumen sucio...\n'; setTimeout(function(){ triggerBSOD('NTFS_FILE_SYSTEM'); }, 1200); }
+    else output.textContent += 'Uso: fsutil dirty set <unidad>\n\n';
+  }
+  else { output.textContent += '\'' + cmd + '\' no se reconoce.\n\n'; }
+}
+
+function openPowerShell(){
+  var id = createWindow({title:'Windows PowerShell', icon:'🔷', width:680, height:420, appId:'powershell', noPad:true,
+    body:'<div class="cmd-body" style="background:#012456;color:#eeedf0;">'+
+      '<div class="cmd-output">Windows PowerShell\nCopyright (C) Microsoft Corp.\n\nPS C:\\Users\\Usuario&gt; </div>'+
+      '<div class="cmd-input-line"><span class="cmd-prompt" style="color:#eeedf0;">PS C:\\Users\\Usuario&gt; </span><input class="cmd-input" style="color:#eeedf0;" autofocus></div>'+
+    '</div>'});
+  var el = document.getElementById(id); if(!el) return id;
+  var input = $('.cmd-input', el), output = $('.cmd-output', el);
+  input.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){
+      var val = input.value;
+      output.textContent += 'PS C:\\Users\\Usuario> ' + val + '\n';
+      input.value = '';
+      var low = val.toLowerCase();
+      if(low==='clear'||low==='cls') output.textContent='';
+      else if(low.indexOf('remove-item')>-1 && (low.indexOf('windows')>-1||low.indexOf('c:\\')>-1)){ output.textContent += 'Eliminando...\n'; setTimeout(function(){ triggerBSOD('CRITICAL_PROCESS_DIED'); }, 900); }
+      else if(low.indexOf('format-volume')>-1){ output.textContent += 'Formateando...\n'; setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1000); }
+      else if(low.indexOf('clear-disk')>-1){ output.textContent += 'Borrando disco...\n'; setTimeout(function(){ applyEffect('disk-wiped'); }, 1200); }
+      else if(low.indexOf('set-executionpolicy')>-1){ output.textContent += 'Política cambiada.\n'; applyEffect('exec-policy-open'); }
+      else if(low.indexOf('disable-windowsoptionalfeature')>-1||low.indexOf('uninstall-windowsfeature')>-1){ output.textContent += 'Desinstalando...\n'; setTimeout(function(){ applyEffect('dotnet-removed'); }, 1200); }
+      else if(low.indexOf('stop-service')>-1){ output.textContent += 'Deteniendo servicios...\n'; setTimeout(function(){ applyEffect('no-services'); applyEffect('no-wmi'); }, 900); }
+      else if(low.indexOf('disable-netadapter')>-1){ output.textContent += 'Deshabilitando red...\n'; setTimeout(function(){ applyEffect('no-network'); }, 900); }
+      else if(low.indexOf('stop-computer')>-1){ output.textContent += 'Apagando...\n'; setTimeout(shutdownOS, 900); }
+      else if(low.indexOf('restart-computer')>-1){ output.textContent += 'Reiniciando...\n'; setTimeout(restartOS, 900); }
+      else output.textContent += 'Comando completado.\n\n';
+      output.scrollTop = output.scrollHeight;
+    }
+  });
+  return id;
+}
+
+/* ============ APPS ============ */
+function openRegedit(){
+  return createWindow({title:'Editor del Registro', icon:'🗝️', width:600, height:420, appId:'regedit',
+    body:'<div style="font-family:Segoe UI,sans-serif;font-size:12.5px;">'+
+      '<b>Editor del Registro</b><br><br>'+
+      '📁 HKEY_CLASSES_ROOT<br>📁 HKEY_CURRENT_USER<br>📁 HKEY_LOCAL_MACHINE<br>'+
+      '&nbsp;&nbsp;📁 SAM<br>&nbsp;&nbsp;📁 SECURITY<br>&nbsp;&nbsp;📁 SOFTWARE<br>&nbsp;&nbsp;📁 SYSTEM<br><br>'+
+      '<button class="btn-danger" style="margin-right:6px;" onclick="applyEffect(\'registry-corrupt\')">💥 Corromper HKLM</button>'+
+      '<button class="btn-danger" onclick="triggerBSOD(\'REGISTRY_FILTER_DRIVER_EXCEPTION\')">☠️ Forzar BSOD</button>'+
+    '</div>'});
+}
+function openBoxStore(){
+  return createWindow({title:'Microsoft Store', icon:'🛍️', width:760, height:520, appId:'store',
+    body:'<div style="font-size:16px;font-weight:600;margin-bottom:16px;">Apps destacadas</div>'+
+      '<div class="store-grid">'+
+        '<div class="store-item"><h4>🛡️ Box Antivirus Pro</h4><p>Protección total.</p><button onclick="toast(\'Instalado\',\'Ya está instalado.\',\'ok\')">Instalado</button></div>'+
+        '<div class="store-item"><h4>💣 Ransomware Simulator</h4><p>Encripta el disco.</p><button onclick="triggerRansomware()">Ejecutar</button></div>'+
+        '<div class="store-item"><h4>⚡ ForkBomb 3000</h4><p>Estrés extremo.</p><button onclick="triggerForkBomb()">Ejecutar</button></div>'+
+        '<div class="store-item"><h4>💰 CryptoMiner</h4><p>Minar al 100% CPU.</p><button onclick="triggerMiner()">Ejecutar</button></div>'+
+        '<div class="store-item"><h4>🕵️ Keylogger</h4><p>Registra pulsaciones.</p><button onclick="triggerKeylogger()">Ejecutar</button></div>'+
+        '<div class="store-item"><h4>🐴 Trojan</h4><p>Puertas traseras.</p><button onclick="triggerTrojan()">Ejecutar</button></div>'+
+        '<div class="store-item"><h4>👻 Rootkit</h4><p>Oculto en kernel.</p><button onclick="triggerRootkit()">Ejecutar</button></div>'+
+        '<div class="store-item"><h4>🪱 Worm</h4><p>Se propaga por la red.</p><button onclick="triggerWorm()">Ejecutar</button></div>'+
+        '<div class="store-item"><h4>🧨 Wiper</h4><p>Sobrescribe el disco.</p><button onclick="openWiper()">Abrir</button></div>'+
+      '</div>'});
+}
+function openTaskManager(){
+  var id = createWindow({title:'Administrador de tareas', icon:'📊', width:620, height:420, appId:'taskmgr',
+    body:'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'+
+      '<b>Procesos</b><button class="btn-danger" id="tm-kill" style="margin-left:auto;">Finalizar</button></div>'+
+      '<table class="file-table" id="tm-table"><thead><tr><th>Nombre</th><th>Estado</th><th>CPU</th><th>Memoria</th></tr></thead><tbody></tbody></table>'});
+  var el = document.getElementById(id); if(!el) return id;
+  var tbody = $('#tm-table tbody', el);
+  var selectedRow = null;
+  function refreshTM(){
+    var rows = [
+      {name:'System', status:'Ejecutando', cpu:'0.1%', mem:'28 MB', critical:true},
+      {name:'explorer.exe', status:damage.explorerDead?'Detenido':'Ejecutando', cpu:'1.2%', mem:'84 MB', critical:true},
+      {name:'csrss.exe', status:'Ejecutando', cpu:'0.0%', mem:'4 MB', critical:true},
+      {name:'winlogon.exe', status:'Ejecutando', cpu:'0.0%', mem:'12 MB', critical:true},
+      {name:'lsass.exe', status:'Ejecutando', cpu:'0.0%', mem:'8 MB', critical:true},
+      {name:'services.exe', status:'Ejecutando', cpu:'0.1%', mem:'6 MB', critical:true},
+      {name:'dwm.exe', status:damage.gpuFailed?'Detenido':'Ejecutando', cpu:'2.4%', mem:'62 MB', critical:true}
+    ];
+    Object.keys(openWindows).forEach(function(wid){
+      var w = openWindows[wid];
+      rows.push({name:w.opts.title, status:'Activo', cpu:(rnd(0,50)/10)+'%', mem:rnd(15,90)+' MB', wid:w.el.id});
+    });
+    tbody.innerHTML = rows.map(function(r){ return '<tr data-wid="'+(r.wid||'')+'" data-crit="'+(r.critical?'1':'0')+'"><td><b>'+esc(r.name)+'</b></td><td>'+r.status+'</td><td>'+r.cpu+'</td><td>'+r.mem+'</td></tr>'; }).join('');
+    $$('tr', tbody).forEach(function(tr){ tr.onclick = function(){ $$('tr', tbody).forEach(function(x){ x.classList.remove('sel'); }); tr.classList.add('sel'); selectedRow = tr; }; });
+  }
+  $('#tm-kill', el).onclick = function(){
+    if(!selectedRow) return;
+    if(selectedRow.dataset.crit==='1'){
+      var proc = selectedRow.querySelector('b').textContent;
+      if(proc==='explorer.exe'){ applyEffect('no-explorer'); refreshTM(); }
+      else if(proc==='dwm.exe'){ applyEffect('no-gpu'); refreshTM(); }
+      else triggerBSOD('CRITICAL_PROCESS_DIED: Killed '+proc);
+    } else if(selectedRow.dataset.wid){ closeWindow(selectedRow.dataset.wid); refreshTM(); }
+  };
+  refreshTM();
+  return id;
+}
+function openNotepad(filePath, initialContent){
+  var path = filePath || '';
+  var id = createWindow({title: path?'Bloc de notas - '+path:'Bloc de notas', icon:'📝', width:560, height:380, appId:'notepad', noPad:true,
+    body:'<div style="display:flex;flex-direction:column;height:100%;">'+
+      '<div class="exp-toolbar" style="padding:4px 8px;">'+
+        '<button class="btn" id="np-save">💾 Guardar</button>'+
+        '<button class="btn" id="np-clear">🗑️ Limpiar</button></div>'+
+      '<textarea class="np-text" style="flex:1;width:100%;border:none;border-radius:0;resize:none;padding:10px;font-family:Consolas,monospace;font-size:13px;"></textarea>'+
+    '</div>'});
+  var el = document.getElementById(id); if(!el) return id;
+  var textarea = $('.np-text', el); textarea.value = initialContent||'';
+  $('#np-save', el).onclick = function(){
+    if(!path){
+      showPrompt({title:'Guardar como', message:'Ruta:', value:'C:/Users/Usuario/Desktop/Documento.txt', onOk:function(p){ path=p; saveFileContent(path, textarea.value); toast('Guardado', path, 'ok'); }});
+    } else { saveFileContent(path, textarea.value); toast('Guardado', path, 'ok'); }
+  };
+  $('#np-clear', el).onclick = function(){ textarea.value=''; };
+  return id;
+}
+function saveFileContent(path, content){
+  var parts = splitPath(path); var fileName = parts.pop(); var parentPath = parts.join('/')||'C:';
+  var parent = getNode(parentPath);
+  if(parent && parent.type==='dir') parent.content[fileName] = mkfile(content);
+}
+function openCalculator(){
+  var id = createWindow({title:'Calculadora', icon:'🧮', width:300, autoHeight:true, appId:'calc',
+    body:'<div style="display:flex;flex-direction:column;gap:8px;">'+
+      '<input class="calc-disp" style="font-size:20px;text-align:right;padding:10px;" value="0" readonly>'+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">'+
+        ['C','CE','/','*','7','8','9','-','4','5','6','+','1','2','3','=','0','.','±','sqrt'].map(function(b){ return '<button class="btn calc-btn" style="padding:12px;font-weight:600;" data-val="'+b+'">'+b+'</button>'; }).join('')+
+      '</div></div>'});
+  var el = document.getElementById(id); if(!el) return id;
+  var disp = $('.calc-disp', el); var expr = '';
+  $$('.calc-btn', el).forEach(function(btn){ btn.onclick = function(){
+    var v = btn.dataset.val;
+    if(v==='C'||v==='CE'){ expr=''; disp.value='0'; }
+    else if(v==='='){ try{ disp.value = eval(expr.replace(/sqrt/g,'Math.sqrt')); expr=disp.value; }catch(e){ disp.value='Error'; expr=''; } }
+    else { expr += v; disp.value = expr; }
+  };});
+  return id;
+}
+function openSettings(){
+  return createWindow({title:'Configuración', icon:'⚙️', width:640, height:460, appId:'settings',
+    body:'<div style="display:flex;gap:16px;height:100%;">'+
+      '<div style="width:160px;border-right:1px solid var(--win-border);display:flex;flex-direction:column;gap:6px;">'+
+        '<button class="btn" style="text-align:left;" onclick="setSettingsTab(\'sys\')">💻 Sistema</button>'+
+        '<button class="btn" style="text-align:left;" onclick="setSettingsTab(\'personal\')">🎨 Personalización</button>'+
+        '<button class="btn" style="text-align:left;" onclick="setSettingsTab(\'sound\')">🔊 Sonido</button>'+
+        '<button class="btn" style="text-align:left;" onclick="setSettingsTab(\'reset\')">🔄 Restablecer</button>'+
+      '</div>'+
+      '<div id="settings-tab-content" style="flex:1;overflow:auto;padding-left:8px;">'+
+        '<h3>Sistema</h3><br>'+
+        '<div class="kv"><span>Equipo</span><span>BoxOS-PC</span></div>'+
+        '<div class="kv"><span>Salud</span><b>'+systemHealth+'%</b></div>'+
+        '<br><button class="btn-danger" onclick="factoryReset()">Restablecer fábrica</button>'+
+      '</div></div>'});
+}
+function setSettingsTab(tab){
+  var c = $('#settings-tab-content'); if(!c) return;
+  if(tab==='sys'){ c.innerHTML = '<h3>Sistema</h3><br><div class="kv"><span>SO</span><span>BoxOS 11 Ultra Destructible</span></div>'; }
+  else if(tab==='personal'){ c.innerHTML = '<h3>Personalización</h3><br>Tema: <select onchange="settings.theme=this.value;applySettings();"><option value="dark">Oscuro</option><option value="light">Claro</option></select><br><br><button class="btn" onclick="cycleWallpaper()">Cambiar fondo</button>'; }
+  else if(tab==='sound'){ c.innerHTML = '<h3>Sonido</h3><br>Volumen: <input type="range" min="0" max="100" value="'+settings.volume+'" oninput="setVolume(this.value)"><br><br><button class="btn" onclick="toggleSound()">Activar/Desactivar</button>'; }
+  else if(tab==='reset'){ c.innerHTML = '<h3>Restablecer</h3><br><button class="btn-danger" onclick="factoryReset()">Restablecer fábrica</button>'; }
+}
+function openAntivirus(){
+  return createWindow({title:'Seguridad de Windows', icon:'🛡️', width:580, height:400, appId:'defender',
+    body:'<div><h3>🛡️ Protección</h3><br>'+
+      '<div class="kv"><span>Tiempo real</span><b style="color:'+(damage.defenderDead?'#ef4444':'#10b981')+';">'+(damage.defenderDead?'Deshabilitada':'Activada')+'</b></div>'+
+      '<br><button class="btn btn-primary" onclick="runAntivirusScan()"'+(damage.defenderDead?' disabled':'')+'>Examen rápido</button>'+
+      (ransomwareActive?' <button class="btn-danger" onclick="cleanRansomware()">Limpiar ransomware</button>':'')+
+    '</div>'});
+}
+function runAntivirusScan(){
+  toast('Análisis','Escaneando...','info',3000);
+  setTimeout(function(){ if(ransomwareActive) cleanRansomware(); else toast('Completado','Sin amenazas.','ok'); }, 3000);
+}
+function cleanRansomware(){ ransomwareActive=false; clearInterval(ransomwareTimer); var r=$('#ransomware'); if(r) r.style.display='none'; toast('Ransomware eliminado','Archivos desencriptados.','ok',4000); }
+function openBrowser(){
+  return createWindow({title:'Microsoft Edge', icon:'🌐', width:740, height:480, appId:'browser', noPad:true,
+    body:'<div style="display:flex;flex-direction:column;height:100%;">'+
+      '<div class="exp-toolbar"><input style="flex:1;" value="https://box.os/welcome" readonly></div>'+
+      '<div style="flex:1;padding:30px;background:#fff;color:#111;">'+
+      (damage.networkFailed?'<p style="color:#c00;">⚠ Sin conexión.</p>':'<p>Navegador BoxOS.</p>')+
+      '</div></div>'});
+}
+function openRecycleBin(){
+  var id = createWindow({title:'Papelera', icon:'🗑️', width:600, height:380, appId:'recycle',
+    body:'<div class="exp-toolbar"><button class="btn-danger" id="rb-empty">Vaciar</button></div><div id="rb-list" style="padding:12px;overflow:auto;flex:1;"></div>'});
+  var el = document.getElementById(id); if(!el) return id;
+  function renderRB(){
+    var list = $('#rb-list', el);
+    if(!recycleBin.length){ list.innerHTML='<div style="color:var(--text-dim);">Vacía.</div>'; return; }
+    list.innerHTML = '<table class="file-table"><thead><tr><th>Nombre</th><th>Eliminado</th></tr></thead><tbody>'+
+      recycleBin.map(function(i){ return '<tr><td>'+esc(i.path)+'</td><td>'+fmtDate(i.deletedAt)+'</td></tr>'; }).join('')+'</tbody></table>';
+  }
+  $('#rb-empty', el).onclick = function(){ recycleBin=[]; renderRB(); toast('Vaciada','','ok'); };
+  renderRB();
+  return id;
+}
+function openPaint(){ return createWindow({title:'Paint', icon:'🎨', width:600, height:400, appId:'paint', body:'<canvas id="paint-canvas" width="550" height="300" style="background:#fff;border:1px solid #888;"></canvas>'}); }
+function openPhotos(){ return createWindow({title:'Fotos', icon:'🖼️', width:500, height:350, appId:'photos', body:'<div style="text-align:center;padding:40px;">🖼️<br><br>Sin fotos.</div>'}); }
+function openDeviceManager(){
+  return createWindow({title:'Administrador de dispositivos', icon:'🔧', width:560, height:420, appId:'devmgr',
+    body:'<div><b>Adaptadores de pantalla</b><br>└ '+(damage.gpuFailed?'⚠ Desconocido':'NVIDIA RTX 4090')+
+      '<br><br><b>Sonido</b><br>└ '+(damage.audioFailed?'⚠ No detectado':'Realtek HD Audio')+
+      '<br><br><b>Red</b><br>└ '+(damage.networkFailed?'⚠ Deshabilitado':'BoxNet 6E')+
+      '<br><br><button class="btn-danger" onclick="applyEffect(\'no-gpu\')" style="margin-right:6px;">Deshabilitar GPU</button>'+
+      '<button class="btn-danger" onclick="applyEffect(\'no-audio\')">Deshabilitar audio</button></div>'});
+}
+function openDiskManager(){
+  return createWindow({title:'Administración de discos', icon:'💽', width:580, height:400, appId:'diskmgr',
+    body:'<div><b>Disco 0 (C:) - NTFS - 2000 GB</b><br><br>'+
+      '<button class="btn-danger" onclick="applyEffect(\'disk-wiped\')" style="margin-right:6px;">Formatear C:</button>'+
+      '<button class="btn-danger" onclick="openWiper()">Wiper</button></div>'});
+}
+function openWindowsUpdate(){
+  return createWindow({title:'Windows Update', icon:'🔄', width:520, height:360, appId:'update',
+    body:'<div><h3>Windows Update</h3><br>'+
+      (damage.updateBroken?'<p style="color:#ef4444;">⚠ Servicio roto.</p>':'<p>Tu sistema está actualizado.</p>')+
+      '<br><button class="btn btn-primary" onclick="triggerBSOD(\'UPDATE_FAILED_SYSTEM_CORRUPTION\')">Forzar actualización corrupta</button></div>'});
+}
+function openEventViewer(){
+  return createWindow({title:'Visor de eventos', icon:'📋', width:560, height:400, appId:'eventvwr',
+    body: damage.eventsDead
+      ? '<div style="color:#ef4444;">⚠ Los registros de eventos fueron eliminados.</div>'
+      : '<div><b>Eventos recientes:</b><br><br>• [INFO] Sistema iniciado<br>• [WARN] Disco bajo</div>'});
+}
+function openServices(){
+  return createWindow({title:'Servicios', icon:'⚡', width:620, height:460, appId:'services',
+    body:'<div><b>Servicios del sistema</b><br><br>'+
+      '<div class="kv"><span>BoxOS Update</span><span style="color:'+(damage.updateBroken?'#ef4444':'#10b981')+';">'+(damage.updateBroken?'Detenido':'Ejecutando')+'</span></div>'+
+      '<div class="kv"><span>Box Security</span><span style="color:'+(damage.defenderDead?'#ef4444':'#10b981')+';">'+(damage.defenderDead?'Detenido':'Ejecutando')+'</span></div>'+
+      '<div class="kv"><span>WMI</span><span style="color:'+(damage.wmiDead?'#ef4444':'#10b981')+';">'+(damage.wmiDead?'Detenido':'Ejecutando')+'</span></div>'+
+      '<div class="kv"><span>Print Spooler</span><span style="color:'+(damage.printDead?'#ef4444':'#10b981')+';">'+(damage.printDead?'Detenido':'Ejecutando')+'</span></div>'+
+      '<br><button class="btn-danger" onclick="applyEffect(\'no-services\')">Detener todos</button></div>'});
+}
+function openDiskpart(){
+  return createWindow({title:'DiskPart', icon:'💥', width:520, height:360, appId:'diskpart', noPad:true,
+    body:'<div class="cmd-body" style="background:#0c0c0c;">'+
+      '<div style="color:#cccccc;">Microsoft DiskPart v10.0\n\nDISKPART> </div>'+
+      '<div style="margin-top:12px;display:flex;flex-direction:column;gap:6px;">'+
+        '<button class="btn-danger" onclick="applyEffect(\'disk-wiped\')">🧨 clean (borrar disco)</button>'+
+        '<button class="btn-danger" onclick="triggerBSOD(\'DISK_PARTITION_FAILURE\')">💥 create partition</button>'+
+        '<button class="btn-danger" onclick="triggerBSOD(\'UNMOUNTABLE_BOOT_VOLUME\')">🧹 format fs=ntfs</button>'+
+      '</div></div>'});
+}
+function openFeatures(){
+  return createWindow({title:'Características de Windows', icon:'🧩', width:620, height:440, appId:'features',
+    body:'<div><b>Activar o desactivar características</b><br><br>'+
+      '<div class="kv"><span>.NET Framework 4.8</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="applyEffect(\'dotnet-removed\')">Desinstalar</button></div>'+
+      '<div class="kv"><span>PowerShell 2.0</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="toast(\'PS 2.0 eliminado\',\'\',\'warn\')">Desinstalar</button></div>'+
+      '<div class="kv"><span>Internet Explorer 11</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="toast(\'IE eliminado\',\'\',\'warn\')">Desinstalar</button></div>'+
+      '<div class="kv"><span>Hyper-V</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="toast(\'Hyper-V eliminado\',\'\',\'warn\')">Desinstalar</button></div>'+
+      '<div class="kv"><span>Subsistema Linux</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="toast(\'WSL eliminado\',\'\',\'warn\')">Desinstalar</button></div>'+
+    '</div>'});
+}
+function openUserManager(){
+  return createWindow({title:'Administración de usuarios', icon:'👥', width:580, height:400, appId:'userdel',
+    body:'<div><b>Cuentas de usuario</b><br><br>'+
+      '<div class="kv"><span>👤 Administrador (admin)</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="applyEffect(\'admin-deleted\')">Eliminar</button></div>'+
+      '<div class="kv"><span>👤 Usuario (Usuario)</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="toast(\'No puedes eliminar la cuenta actual\',\'\',\'error\')">Eliminar</button></div>'+
+      '<div class="kv"><span>👤 Invitado</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="toast(\'Eliminado\',\'Cuenta Invitado borrada.\',\'ok\')">Eliminar</button></div>'+
+    '</div>'});
+}
+function openWiper(){
+  return createWindow({title:'Wiper Zero-Fill', icon:'🧹', width:520, height:340, appId:'wiper',
+    body:'<div><b>⚠⚠ WIPER — Sobrescritura total</b><br><br>'+
+      'Esta herramienta sobrescribe TODOS los datos.<br><br>'+
+      '<div class="kv"><span>Disco 0</span><span>2000 GB</span></div>'+
+      '<div class="kv"><span>Algoritmo</span><span>DoD 5220.22-M</span></div>'+
+      '<br><button class="btn-danger" onclick="applyEffect(\'disk-wiped\')">🧹 INICIAR WIPE</button></div>'});
+}
+
+/* ============ MALWARE ============ */
+function triggerBSOD(reason){
+  reason = reason || 'CRITICAL_PROCESS_DIED';
+  playAudio('bsod');
+  var screen = $('#bsod');
+  var reasonEl = $('#bsod-reason'), progEl = $('#bsod-progress');
+  if(reasonEl) reasonEl.textContent = 'Código de detención: ' + reason;
+  screen.style.display = 'flex';
+  var prog = 0;
+  var inv = setInterval(function(){
+    prog += rnd(10,25);
+    if(prog>=100){ prog=100; clearInterval(inv); setTimeout(function(){ restartOS(); }, 1500); }
+    if(progEl) progEl.textContent = prog;
+  }, 400);
+}
+function triggerRansomware(){
+  ransomwareActive = true;
+  $('#ransomware').style.display = 'flex';
+  var t = 300;
+  clearInterval(ransomwareTimer);
+  ransomwareTimer = setInterval(function(){
+    t--;
+    var m = String(Math.floor(t/60)); if(m.length<2) m='0'+m;
+    var s = String(t%60); if(s.length<2) s='0'+s;
+    var timerEl = $('#ransom-timer');
+    if(timerEl) timerEl.textContent = m+':'+s;
+    if(t<=0){ clearInterval(ransomwareTimer); triggerBSOD('RANSOMWARE_EXPIRED_SYSTEM_WIPED'); }
+  }, 1000);
+}
+function triggerForkBomb(){
+  toast('Peligro','ForkBomb en ejecución...','error',1000);
+  var count = 0;
+  forkBombInterval = setInterval(function(){
+    count++;
+    createWindow({title:'ForkBomb #'+count, icon:'💥', width:260, height:160, body:'Calculando infinitamente...'});
+    if(count>25){ clearInterval(forkBombInterval); triggerBSOD('RESOURCE_EXHAUSTION_FORKBOMB'); }
+  }, 100);
+}
+function triggerMiner(){
+  if(minerInterval) return;
+  toast('CryptoMiner','Minando al 100% de CPU...','warn',3000);
+  damage.overheat = true; damage.lowMem = true; applyDamageVisuals();
+  minerInterval = setInterval(function(){
+    systemHealth = Math.max(0, systemHealth - 3);
+    if(systemHealth<=0){ clearInterval(minerInterval); triggerBSOD('CPU_OVERHEAT_CRITICAL'); }
+  }, 2000);
+}
+function triggerKeylogger(){
+  if(keyloggerInterval) return;
+  toast('Keylogger','Registrando teclas...','error',3000);
+  keyloggerInterval = setInterval(function(){
+    if(Math.random()<0.3) toast('Keylogger', 'Capturada tecla: "'+String.fromCharCode(97+rnd(0,25))+'"', 'warn', 800);
+  }, 3000);
+  setTimeout(function(){ clearInterval(keyloggerInterval); keyloggerInterval=null; toast('Keylogger detenido','','ok'); }, 20000);
+}
+function triggerTrojan(){
+  toast('Trojan','Puerta trasera en puerto 4444.','error',4000);
+  setTimeout(function(){ toast('Trojan','Descarga remota en curso...','error',4000); }, 2000);
+  setTimeout(function(){ damage.networkFailed = true; applyDamageVisuals(); toast('Red comprometida','Filtración en curso.','error',5000); }, 5000);
+}
+function triggerRootkit(){
+  toast('Rootkit','Ocultándose en el kernel...','error',4000);
+  damage.registryCorrupt = true; damage.defenderDead = true;
+  setTimeout(function(){ triggerBSOD('KERNEL_DATA_INPAGE_ERROR'); }, 3500);
+}
+function triggerWorm(){
+  toast('Worm','Propagándose por la red...','error',4000);
+  setTimeout(function(){ damage.networkFailed = true; applyDamageVisuals(); toast('Red saturada','Todos infectados.','error',5000); }, 2500);
+  setTimeout(function(){ triggerBSOD('NETWORK_STACK_CORRUPTION'); }, 6000);
+}
+
+/* ============ ACCIONES DE SISTEMA ============ */
+function payRansom(){ toast('Error','Transacción fallida.','error'); }
+function lockSession(){ $('#lock-screen').style.display='flex'; var p = $('#lock-pin'); if(p){ p.value=''; p.focus(); } }
+function sleepOS(){ toast('Suspensión','El equipo entrará en suspensión...','info'); setTimeout(function(){ lockSession(); },1000); }
+function restartOS(){
+  closeAllWindows();
+  var ids = ['bsod','lock-screen','shutdown-screen','ransomware'];
+  ids.forEach(function(i){ var e = document.getElementById(i); if(e) e.style.display='none'; });
+  ransomwareActive = false; clearInterval(ransomwareTimer);
+  var boot = $('#boot-screen'); if(boot) boot.style.display='flex';
+  var bt = $('#boot-text'); if(bt) bt.textContent = 'Reiniciando BoxOS 11...';
+  setTimeout(function(){
+    if(boot) boot.style.setProperty('display','none','important');
+    if(damage.bootloaderGone){ showNoOS(); return; }
+    if(damage.explorerDead) applyDamageVisuals();
+    playAudio('startup');
+  }, 2000);
+}
+function shutdownOS(){
+  closeAllWindows();
+  var screen = $('#shutdown-screen'); screen.style.display='flex';
+  setTimeout(function(){ var st = $('#shutdown-text'); if(st) st.textContent='El equipo está apagado. Recarga la página.'; var sp = $('.spinner', screen); if(sp) sp.style.display='none'; }, 2000);
+}
+function bootSafeMode(){ safeMode=true; $('#bsod').style.display='none'; applySettings(); toast('Modo seguro','BoxOS ha iniciado en Modo Seguro.','warn'); }
+function hideScreen(id){ var el = document.getElementById(id); if(el) el.style.display='none'; }
+function toggleWidgets(){ $('#widgets-panel').classList.toggle('open'); }
+
+/* ============ INICIALIZACIÓN ============ */
+function initBoxOS(){
+  try{ localStorage.removeItem('boxos11'); }catch(e){}
+  vfs = createVFS(); recycleBin = [];
+
+  try{ applySettings(); }catch(e){ console.warn('applySettings failed:', e); }
+  try{ renderDesktopIcons(); }catch(e){ console.warn('renderDesktopIcons failed:', e); }
+  try{ updateClock(); }catch(e){ console.warn('updateClock failed:', e); }
+  setInterval(updateClock, 1000);
+  try{ renderMiniCalendar(); }catch(e){ console.warn('renderMiniCalendar failed:', e); }
+
+  // Ocultar pantalla de arranque (con múltiples mecanismos de seguridad)
+  var bootScreen = document.getElementById('boot-screen');
+  function hideBoot(){
+    if(bootScreen) bootScreen.style.setProperty('display','none','important');
+    if(damage.bootloaderGone){ showNoOS(); return; }
+    playAudio('startup');
+  }
+  if(bootScreen){
+    bootScreen.onclick = hideBoot;
+    setTimeout(hideBoot, 2200);
+  }
+
+  // PIN de bloqueo
+  var lockPin = $('#lock-pin');
+  if(lockPin){
+    lockPin.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){
+        if(lockPin.value===settings.password || lockPin.value==='box'){
+          $('#lock-screen').style.display='none';
+          toast('Bienvenido', settings.username, 'ok', 2000);
+        } else toast('PIN Incorrecto','Por defecto es "box"','error');
+      }
+    });
+  }
+
+  var s = $('#start-search-input');
+  if(s) s.addEventListener('input', function(){ renderStartList(s.value); });
+
+  document.addEventListener('keydown', function(e){
+    if(e.ctrlKey && e.shiftKey && (e.key==='Escape'||e.key==='Esc')){ e.preventDefault(); openTaskManager(); }
+    if(e.ctrlKey && e.altKey && e.key==='Delete'){ $('#security-screen').style.display='flex'; }
+    if(e.key==='Escape'){
+      closeStart(); hideContextMenu();
+      var wp = $('#widgets-panel'); if(wp) wp.classList.remove('open');
+      var tv = $('#task-view'); if(tv) tv.classList.remove('open');
+      $$('.flyout').forEach(function(f){ f.classList.remove('open'); });
+    }
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#start-menu') && !e.target.closest('.btn-start')) closeStart();
+    if(!e.target.closest('#ctx-menu')) hideContextMenu();
+  });
+
+  // Forzar ocultación de la pantalla de arranque tras un tiempo máximo
+  setTimeout(function(){
+    var bs = document.getElementById('boot-screen');
+    if(bs) bs.style.setProperty('display','none','important');
+  }, 3500);
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', initBoxOS);
+} else {
+  // El DOM ya está listo (script cargado tarde)
+  initBoxOS();
+}
+</script>
+</body>
+</html>

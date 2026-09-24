@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Ubuntu 24.04 GNOME — Ultra Destructible (BoxOS11 port)</title>
+<style>
+:root{
+  --accent:#e95420;--accent-2:#77216f;--win-bg:rgba(36,36,40,.82);--win-header:rgba(48,48,54,.95);
+  --win-border:rgba(255,255,255,.1);--text:#f5f5f7;--text-dim:#a8a8b0;--text-dim2:#71717a;
+  --topbar-bg:rgba(20,20,24,.78);--dash-bg:rgba(28,28,32,.75);--hover:rgba(255,255,255,.08);
+  --hover-2:rgba(255,255,255,.16);--danger:#e01b24;--warn:#f5c211;--ok:#2ec27e;
+  --sidebar:rgba(28,28,32,.65);--input-bg:rgba(0,0,0,.35);--row:rgba(255,255,255,.06);
+}
+body.light{--win-bg:rgba(250,250,252,.9);--win-header:rgba(238,238,242,.95);--win-border:rgba(0,0,0,.1);--text:#1a1a1f;--text-dim:#5c5c66;--topbar-bg:rgba(255,255,255,.82);--dash-bg:rgba(240,240,244,.85);--hover:rgba(0,0,0,.06);--hover-2:rgba(0,0,0,.12);--sidebar:rgba(240,240,244,.7);--input-bg:rgba(255,255,255,.7);--row:rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Cantarell','Ubuntu','Segoe UI',Roboto,sans-serif;user-select:none;-webkit-font-smoothing:antialiased}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--text)}
+#topbar{position:fixed;top:0;left:0;right:0;height:28px;background:var(--topbar-bg);backdrop-filter:blur(20px) saturate(180%);display:flex;align-items:center;padding:0 8px;z-index:99999;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.04)}
+.tb-item{padding:2px 10px;border-radius:5px;cursor:pointer;height:22px;display:flex;align-items:center;gap:5px}
+.tb-item:hover{background:var(--hover-2)}
+.tb-activities{font-weight:600}
+.tb-app{font-weight:600;padding-left:14px}
+.tb-center{position:absolute;left:50%;transform:translateX(-50%);font-weight:600}
+.tb-right{margin-left:auto;display:flex;gap:2px;align-items:center}
+#desktop{position:absolute;inset:28px 0 0 0;overflow:hidden;transition:background .4s}
+#desktop.wp-1{background:linear-gradient(135deg,#2c001e 0%,#5e2750 40%,#e95420 100%)}
+#desktop.wp-2{background:linear-gradient(135deg,#1a0d2e 0%,#77216f 60%,#e95420 100%)}
+#desktop.wp-3{background:linear-gradient(135deg,#0a1320 0%,#1a2848 50%,#e95420 100%)}
+#desktop.wp-4{background:linear-gradient(160deg,#0d2818,#1e5c3a 40%,#6ee7b7 100%)}
+#desktop.wp-5{background:linear-gradient(160deg,#1a0033,#b91c5c 40%,#fbbf24 100%)}
+#desktop.wp-6{background:linear-gradient(135deg,#18181b,#3f3f46)}
+#desktop.wp-7{background:linear-gradient(135deg,#064e3b,#10b981 60%,#fef3c7 100%)}
+#desktop.wp-8{background:linear-gradient(135deg,#111827,#1e40af 50%,#3b82f6 100%)}
+body.safe-mode #desktop{background:#1a1a1a !important}
+body.no-gpu #desktop{filter:grayscale(60%) contrast(180%) hue-rotate(90deg);animation:gpuGlitch .18s infinite}
+@keyframes gpuGlitch{0%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,2px)}80%{transform:translate(1px,-2px)}100%{transform:translate(0,0)}}
+body.no-shell #desktop{background:#000 !important}
+body.no-shell .desktop-icon{display:none !important}
+body.corrupt-text,body.corrupt-text *{font-family:'Comic Sans MS','Papyrus',cursive !important;letter-spacing:2px}
+body.c-destroyed #desktop{background:#000 !important}
+body.c-destroyed .desktop-icon{opacity:.25;filter:grayscale(1);pointer-events:none}
+body.low-mem .window{animation:memFlicker .8s infinite}
+@keyframes memFlicker{0%,100%{opacity:1}50%{opacity:.85}}
+body.overheat #desktop{animation:heatShimmer 1.5s infinite}
+@keyframes heatShimmer{0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.15) saturate(1.4) hue-rotate(-10deg)}}
+.desktop-icon{position:absolute;width:90px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:8px;color:#fff;font-size:11.5px;text-shadow:0 1px 3px rgba(0,0,0,.9);cursor:default;border-radius:6px;text-align:center;touch-action:none}
+.desktop-icon:hover{background:rgba(255,255,255,.1)}
+.desktop-icon.selected{background:rgba(233,84,32,.4)}
+.icon-img{font-size:44px;margin-bottom:4px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
+.icon-label{line-height:1.15;padding:1px 4px;border-radius:3px;word-wrap:break-word}
+.desktop-icon.selected .icon-label{background:var(--accent)}
+#dash{position:fixed;left:10px;top:50%;transform:translateY(-50%);background:var(--dash-bg);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:10px 6px;display:flex;flex-direction:column;gap:8px;z-index:99998;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.dash-item{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;position:relative;transition:transform .15s,background .15s}
+.dash-item:hover{transform:scale(1.12);background:var(--hover-2)}
+.dash-item.running::after{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--accent);border-radius:2px}
+.dash-sep{height:1px;background:rgba(255,255,255,.15);margin:4px 6px}
+.window{position:absolute;min-width:340px;min-height:200px;background:var(--win-bg);backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--win-border);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden;z-index:10}
+.window.opening{animation:winOpen .18s cubic-bezier(.2,.9,.3,1)}
+@keyframes winOpen{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.window.focused{box-shadow:0 25px 70px rgba(0,0,0,.65),0 0 0 1px rgba(233,84,32,.3)}
+.window.maximized{border-radius:0;border:none}
+.window-header{background:var(--win-header);height:40px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--win-border);flex:0 0 auto;position:relative}
+.window-title{flex:1;font-size:13px;font-weight:600;text-align:center;pointer-events:none;padding-left:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.window-controls{display:flex;gap:6px;z-index:2}
+.wc-btn{width:22px;height:22px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.7);background:rgba(255,255,255,.1);transition:background .12s}
+.wc-btn:hover{background:rgba(255,255,255,.22)}
+.wc-close:hover{background:var(--danger) !important;color:#fff}
+.wc-min:hover{background:var(--warn) !important;color:#000}
+.wc-max:hover{background:var(--ok) !important;color:#fff}
+.window-body{flex:1;overflow:auto;background:var(--win-bg);color:var(--text);font-size:13px;padding:16px}
+.window-body.no-pad{padding:0}
+.rz{position:absolute;z-index:5}.rz-se{right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize}.rz-e{right:0;top:40px;width:5px;height:calc(100% - 40px);cursor:ew-resize}.rz-s{left:0;bottom:0;width:100%;height:5px;cursor:ns-resize}
+#overview{position:fixed;inset:28px 0 0 0;background:rgba(20,20,26,.82);backdrop-filter:blur(40px);display:none;z-index:150000;padding:60px 40px 40px 90px;overflow:auto}
+#overview.open{display:block;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.ov-title{font-size:22px;font-weight:300;color:#fff;margin-bottom:20px}
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.ov-card{background:var(--win-bg);border:1px solid var(--win-border);border-radius:10px;padding:14px;cursor:pointer;transition:transform .15s;height:180px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.ov-card:hover{transform:scale(1.03);border-color:var(--accent)}
+.ov-card-title{font-size:12.5px;font-weight:600;display:flex;gap:8px;align-items:center}
+.ov-card-prev{flex:1;background:var(--hover);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:40px;opacity:.5}
+.ov-apps-title{font-size:13px;color:var(--text-dim);margin:30px 0 14px;font-weight:600}
+.ov-apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:20px}
+.ov-app{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.ov-app-icon{width:64px;height:64px;border-radius:14px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:36px;transition:transform .15s}
+.ov-app:hover .ov-app-icon{transform:scale(1.1);background:var(--accent)}
+.ov-app-name{color:#fff;font-size:11px;text-align:center}
+.ov-workspaces{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.ov-ws{width:120px;height:68px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.15);border-radius:6px;cursor:pointer}
+.ov-ws.active{border-color:var(--accent);background:rgba(233,84,32,.15)}
+#notifications{position:fixed;top:36px;right:10px;display:flex;flex-direction:column;gap:8px;z-index:150002;width:340px;pointer-events:none}
+.toast{background:var(--win-bg);backdrop-filter:blur(30px);border:1px solid var(--win-border);border-radius:10px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.55);animation:toastIn .3s cubic-bezier(.2,.9,.3,1);pointer-events:auto;position:relative}
+.toast::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:10px 0 0 10px}
+.toast.err::before{background:var(--danger)}.toast.ok::before{background:var(--ok)}.toast.warn::before{background:var(--warn)}
+.toast.out{animation:toastOut .3s forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(60px)}}
+.toast-title{font-size:13px;font-weight:600}
+.toast-msg{font-size:12px;color:var(--text-dim);margin-top:3px;line-height:1.4}
+#ctx-menu{position:fixed;background:var(--win-bg);backdrop-filter:blur(30px);border:1px solid var(--win-border);border-radius:10px;box-shadow:0 15px 40px rgba(0,0,0,.6);padding:6px;display:none;z-index:150003;min-width:200px}
+#ctx-menu .ctx-item{padding:7px 12px;border-radius:6px;font-size:13px;cursor:pointer;display:flex;gap:10px;align-items:center}
+#ctx-menu .ctx-item:hover{background:var(--accent);color:#fff}
+.fullscreen{position:fixed;inset:0;z-index:200000;display:none;flex-direction:column}
+#grub-screen{background:#1a0d2e;color:#fff;font-family:'Cascadia Mono','Ubuntu Mono',monospace;padding:40px;z-index:250000;justify-content:center}
+.grub-title{font-size:18px;color:#e95420;margin-bottom:20px;font-weight:bold}
+.grub-entry{padding:8px 16px;font-size:15px;margin:2px 0;border-radius:4px}
+.grub-entry.sel{background:#e95420;color:#fff}
+.grub-bottom{margin-top:26px;font-size:12px;color:#a8a8b0}
+#systemd-boot{background:#000;color:#e0e0e0;font-family:'Cascadia Mono',monospace;padding:20px;font-size:12.5px;line-height:1.5;overflow:auto;z-index:280000}
+.sb-ok{color:#2ec27e}.sb-fail{color:#e01b24}.sb-warn{color:#f5c211}.sb-dim{color:#71717a}
+#kernel-panic{background:#000;color:#fff;font-family:'Cascadia Mono','Ubuntu Mono',monospace;font-size:12.5px;line-height:1.5;padding:22px;overflow:auto;z-index:300000}
+.kp-title{color:#e95420;font-weight:bold;margin-bottom:10px}
+.kp-dump{white-space:pre-wrap;font-size:11.5px}
+.kp-blame{color:#f5c211;margin-top:14px}
+#tty-login{background:#000;color:#d0d0d0;font-family:'Cascadia Mono','Ubuntu Mono',monospace;padding:40px;justify-content:center;z-index:250000;font-size:14px}
+.tty-line{margin:4px 0}
+#recovery-screen{background:#000;color:#fff;align-items:center;justify-content:center;gap:20px;text-align:center;padding:40px;z-index:300002}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#shutdown-screen{background:#000;color:#dcdcdc;align-items:center;justify-content:center;gap:20px;z-index:300002}
+#ransomware{background:#8b0000;color:#fff;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:250000;flex-direction:column}
+.terminal-body{background:rgba(0,0,0,.88);color:#e8e8ea;font-family:'Cascadia Mono','Ubuntu Mono',monospace;padding:12px;font-size:12.5px;line-height:1.5;height:100%;display:flex;flex-direction:column}
+.terminal-output{flex:1;overflow-y:auto;white-space:pre-wrap;user-select:text}
+.terminal-line{display:flex;gap:0;align-items:center}
+.terminal-prompt{color:#2ec27e;white-space:nowrap}
+.terminal-input{background:transparent;border:none;color:#e8e8ea;font-family:inherit;outline:none;width:100%;font-size:12.5px}
+button{cursor:pointer;font-family:inherit}
+.btn{background:var(--row);color:var(--text);border:1px solid var(--win-border);padding:6px 14px;border-radius:6px;font-size:12.5px}
+.btn:hover{background:var(--hover-2)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn-danger{background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px}
+input,textarea,select{background:var(--input-bg);color:var(--text);border:1px solid var(--win-border);border-radius:6px;padding:6px 10px;outline:none;font-size:12.5px;font-family:inherit}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,84,32,.15)}
+.files-wrap{display:flex;height:100%}
+.files-sidebar{width:180px;background:var(--sidebar);border-right:1px solid var(--win-border);padding:8px 0;overflow:auto;flex:0 0 auto}
+.files-section{padding:8px 16px 4px;font-size:10.5px;color:var(--text-dim2);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.files-item{padding:5px 16px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px;border-radius:4px;margin:1px 6px}
+.files-item:hover{background:var(--hover)}
+.files-item.active{background:var(--accent);color:#fff}
+.files-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.files-toolbar{padding:8px 12px;border-bottom:1px solid var(--win-border);display:flex;gap:8px;align-items:center;background:var(--win-header)}
+.files-toolbar .btn{padding:4px 10px;font-size:12px}
+.files-path{flex:1;font-size:12px;color:var(--text-dim);padding:4px 10px;background:var(--input-bg);border-radius:6px;font-family:'Cascadia Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.files-list{flex:1;overflow:auto;padding:4px 0}
+.files-row{display:flex;align-items:center;padding:6px 14px;font-size:12.5px;cursor:default;border-bottom:1px solid var(--win-border)}
+.files-row:hover{background:var(--hover)}
+.files-row.sel{background:var(--accent);color:#fff}
+.files-row .fr-icon{width:24px;font-size:16px}
+.files-row .fr-name{flex:1}
+.files-row .fr-size{width:80px;text-align:right;color:var(--text-dim)}
+.files-row .fr-date{width:150px;text-align:right;color:var(--text-dim)}
+.files-row .fr-act{padding:2px 6px;font-size:11px;margin-left:6px}
+.files-status{padding:5px 14px;border-top:1px solid var(--win-border);font-size:11px;color:var(--text-dim);background:var(--win-header)}
+.dc-cat{margin:16px 0 6px;font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--win-border);padding-bottom:4px}
+.dc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-bottom:10px}
+.dc-btn{background:var(--row);color:var(--text);border:1px solid var(--win-border);padding:9px 12px;border-radius:8px;text-align:left;font-size:12px;cursor:pointer;transition:.12s}
+.dc-btn:hover{background:var(--danger);color:#fff;transform:translateY(-1px);border-color:var(--danger)}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--win-border);font-size:12.5px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="topbar">
+  <div class="tb-item tb-activities" onclick="toggleOverview()">⊞ Actividades</div>
+  <div class="tb-item tb-app" id="tb-appname">Escritorio</div>
+  <div class="tb-item tb-center" id="tb-clock">12:00</div>
+  <div class="tb-right">
+    <div class="tb-item" id="tb-wifi" onclick="toggleFlyout('net-flyout')">📶</div>
+    <div class="tb-item" id="tb-sound" onclick="toast('Sonido','Nivel '+(settings.sound?'activado':'silenciado'),'info',1500)">🔊</div>
+    <div class="tb-item" onclick="toast('Batería','87%','info',1500)">🔋</div>
+  </div>
+</div>
+
+<div id="desktop" class="wp-1"></div>
+<div id="dash"></div>
+
+<div id="overview">
+  <div class="ov-workspaces"><div class="ov-ws active"></div><div class="ov-ws"></div></div>
+  <div class="ov-title">Ventanas abiertas</div>
+  <div class="ov-grid" id="ov-grid"></div>
+  <div class="ov-apps-title">Aplicaciones</div>
+  <div class="ov-apps" id="ov-apps"></div>
+</div>
+
+<div class="flyout" id="net-flyout" style="position:fixed;bottom:56px;right:12px;background:var(--win-bg);backdrop-filter:blur(30px);border:1px solid var(--win-border);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.6);padding:16px;display:none;z-index:150001;width:320px">
+  <div style="font-size:14px;margin-bottom:10px">📶 Red</div>
+  <div class="kv"><span>Adaptador</span><span>BoxNet 6E</span></div>
+  <div class="kv"><span>Estado</span><span style="color:var(--ok)">Conectado</span></div>
+</div>
+
+<div id="notifications"></div>
+<div id="ctx-menu"></div>
+
+<div class="fullscreen" id="grub-screen">
+  <div class="grub-title">GNU GRUB version 2.12</div>
+  <div class="grub-entry sel">*Ubuntu</div>
+  <div class="grub-entry">Advanced options for Ubuntu</div>
+  <div class="grub-entry">Memory test (memtest86+)</div>
+  <div class="grub-entry">Windows Boot Manager</div>
+  <div class="grub-entry">UEFI Firmware Settings</div>
+  <div class="grub-bottom">Use ↑↓ para seleccionar. Enter para arrancar.</div>
+</div>
+
+<div class="fullscreen" id="systemd-boot"></div>
+
+<div class="fullscreen" id="tty-login">
+  <div class="tty-line">Ubuntu 24.04.1 LTS ubuntu tty1</div><br>
+  <div class="tty-line">ubuntu login: <input id="tty-user" style="background:transparent;border:none;color:#d0d0d0;outline:none;font-family:inherit;font-size:14px" autocomplete="off"></div>
+</div>
+
+<div class="fullscreen" id="kernel-panic">
+  <div class="kp-title" id="kp-title">[ 0.000000] Kernel panic - not syncing: Fatal exception</div>
+  <div class="kp-dump" id="kp-dump"></div>
+  <div class="kp-blame" id="kp-blame"></div>
+  <div style="margin-top:20px">
+    <button class="btn btn-primary" style="padding:8px 20px" onclick="restartOS()">Reiniciar</button>
+    <button class="btn" style="padding:8px 20px;margin-left:8px" onclick="showGRUB()">Ir a GRUB</button>
+  </div>
+</div>
+
+<div class="fullscreen" id="recovery-screen">
+  <div style="font-size:56px">🐧</div>
+  <div style="font-size:22px">Ubuntu Recovery</div>
+  <div class="spinner"></div>
+</div>
+
+<div class="fullscreen" id="shutdown-screen">
+  <div class="spinner"></div>
+  <div style="font-size:20px;font-weight:300" id="shutdown-text">Apagando...</div>
+</div>
+
+<div class="fullscreen" id="ransomware">
+  <h1 style="font-size:46px;margin-bottom:14px">⚠️ WANNA_LINUX_CRY ⚠️</h1>
+  <p style="font-size:16px">Tus archivos han sido encriptados.</p>
+  <p style="margin:26px 0;font-size:32px;color:#ffcc00;font-weight:200">Tiempo: <span id="ransom-timer">05:00</span></p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button class="btn-danger" style="padding:12px 28px;font-size:15px" onclick="payRansom()">PAGAR 5 BTC</button>
+    <button class="btn" style="padding:12px 28px;font-size:15px;background:#10b981;border:none;color:#fff" onclick="cleanRansomware()">🛡️ Antivirus</button>
+    <button class="btn" style="padding:12px 28px;font-size:15px;background:#333;color:#fff;border:1px solid #555" onclick="kernelPanic('RANSOMWARE_SYSTEM_DESTRUCTION')">DESTRUIR</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Ubuntu 24.04 GNOME — port de BoxOS 11
+   Motor idéntico · skin GNOME
+   ============================================================ */
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var fmtSize=function(n){return n<1024?n+' B':(n/1024).toFixed(1)+' KB'};
+var fmtDate=function(t){return new Date(t).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})};
+var rnd=function(a,b){return Math.floor(Math.random()*(b-a+1))+a};
+
+var audioCtx=null;
+function ac(){if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}return audioCtx}
+function beep(f,d,t,v){t=t||'sine';v=v||.05;if(!settings.sound)return;try{var c=ac();if(!c)return;var o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.setValueAtTime(f,c.currentTime);g.gain.setValueAtTime(v,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+function playAudio(type){if(!settings.sound)return;var notes={error:[[180,.18,'sawtooth',.06],[90,.25,'sawtooth',.06]],panic:[[60,1.4,'sawtooth',.07]],beep:[[440,.08,'square',.05]],click:[[900,.03,'sine',.03]],notify:[[880,.08,'sine',.04],[1180,.09,'sine',.04]],startup:[[523,.25,'sine',.05],[659,.25,'sine',.05],[784,.25,'sine',.05],[1046,.25,'sine',.05]],shutdown:[[784,.25,'sine',.05],[659,.25,'sine',.05],[523,.25,'sine',.05],[392,.25,'sine',.05]],success:[[523,.12,'sine',.05],[784,.15,'sine',.05]],warn:[[330,.15,'square',.04],[330,.15,'square',.04]]};var seq=notes[type];if(!seq)return;seq.forEach(function(n,i){setTimeout(function(){beep(n[0],n[1],n[2],n[3])},i*130)})}
+
+var settings={sound:true,volume:70,theme:'dark',accent:'#e95420',wallpaper:'wp-1',username:'usuario',password:'box',icons:{},iconLabels:{}};
+
+var damage={gpuFailed:false,audioFailed:false,networkFailed:false,fontCorrupt:false,shellDead:false,bootloaderGone:false,desktopGone:false,defenderDead:false,recoveryDead:false,printDead:false,wmiDead:false,servicesDead:false,tasksDead:false,eventsDead:false,logsDead:false,lowMem:false,overheat:false,diskWiped:false,registryCorrupt:false,groupPolicyLock:false,adminDeleted:false,updateBroken:false,netAdapterDisabled:false,dotnetRemoved:false,executionPolicyOpen:false};
+
+var vfs=null,recycleBin=[],trash=[];
+var isDiskDestroyed=false,safeMode=false;
+var _blockDialogOpen=false;
+var ransomwareActive=false,ransomwareTimer=null;
+var forkBombInterval=null,minerInterval=null,keyloggerInterval=null;
+var systemHealth=100;
+
+function diskBlocked(){
+  if(!isDiskDestroyed)return false;
+  playAudio('error');
+  if(_blockDialogOpen){toast('Sistema inoperable','Recarga (F5).','error',3000);return true}
+  _blockDialogOpen=true;
+  showDialog({title:'Sistema inoperable',icon:'☠️',width:540,
+    message:'El sistema de archivos raíz (/) ha sido destruido.\n\nTodos los programas están inaccesibles de forma permanente.\n\nRecarga la página (F5) para reinstalar Ubuntu.',
+    buttons:[{label:'Recargar ahora',primary:true,onClick:function(){_blockDialogOpen=false;location.reload()}},{label:'Cerrar',onClick:function(){_blockDialogOpen=false}}]});
+  return true;
+}
+function killSystem(){
+  if(isDiskDestroyed)return;
+  isDiskDestroyed=true;damage.diskWiped=true;
+  try{closeAllWindows()}catch(e){}
+  try{var ov=$('#overview');if(ov)ov.classList.remove('open')}catch(e){}
+  document.body.classList.add('c-destroyed');
+  setTimeout(function(){try{vfs={'root':mkdir({})}}catch(e){}},100);
+  toast('DISCO DESTRUIDO','El sistema de archivos raíz ha sido borrado. Todos los programas han dejado de funcionar.','error',6000);
+}
+
+/* Las 70 destrucciones son IDÉNTICAS a las de BoxOS 11 original */
+var DESTRUCTIONS_70=[
+/* 🥾 Arranque y kernel */
+{cat:'🥾 Arranque y kernel',n:'Corromper MBR',i:'💾',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Sobrescribir sector arranque',i:'💿',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Borrar vmlinuz',i:'📦',f:function(){deleteFromVFS('/boot/vmlinuz');reactToDestruction({panic:'VFS: Unable to mount root fs'},'/boot/vmlinuz')}},
+{cat:'🥾 Arranque y kernel',n:'Corromper initramfs',i:'🚀',f:function(){kernelPanic('Initramfs unpacking failed: invalid magic')}},
+{cat:'🥾 Arranque y kernel',n:'Eliminar /sbin/init',i:'🔗',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Kernel panic manual',i:'💥',f:function(){kernelPanic('Kernel panic - not syncing: Fatal exception')}},
+{cat:'🥾 Arranque y kernel',n:'Kill PID 1 (systemd)',i:'💀',f:function(){kernelPanic('Attempted to kill init! exitcode=0x0000000b')}},
+{cat:'🥾 Arranque y kernel',n:'Corromper /etc/fstab',i:'🗝️',f:function(){kernelPanic('VFS: Cannot open root device')}},
+{cat:'🥾 Arranque y kernel',n:'GRUB corrupto',i:'🥾',f:function(){damage.bootloaderGone=true;setTimeout(showGRUB,1000)}},
+{cat:'🥾 Arranque y kernel',n:'Secure Boot roto',i:'🔒',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Eliminar Recovery',i:'💽',f:function(){damage.recoveryDead=true}},
+{cat:'🥾 Arranque y kernel',n:'Corromper NVRAM',i:'🗝️',f:function(){kernelPanic('NVRAM_CORRUPTION')}},
+{cat:'🥾 Arranque y kernel',n:'Firmware BIOS roto',i:'⚙️',f:function(){kernelPanic('BIOS_FAILURE')}},
+{cat:'🥾 Arranque y kernel',n:'Fallo SMC',i:'💥',f:function(){kernelPanic('SMC_FAILED')}},
+{cat:'🥾 Arranque y kernel',n:'Bucle de arranque',i:'🔄',f:function(){applyEffect('no-os')}},
+
+/* 🔧 Hardware */
+{cat:'🔧 Hardware y drivers',n:'CPU overclock extremo',i:'🔥',f:function(){applyEffect('overheat');setTimeout(function(){kernelPanic('CPU_OVERHEAT')},2000)}},
+{cat:'🔧 Hardware y drivers',n:'RAM overclock fallido',i:'🧠',f:function(){kernelPanic('MEMORY_MANAGEMENT')}},
+{cat:'🔧 Hardware y drivers',n:'GPU TDR forzado',i:'🖥️',f:function(){applyEffect('no-gpu')}},
+{cat:'🔧 Hardware y drivers',n:'Eliminar driver store',i:'📦',f:function(){deleteFromVFS('/lib/modules');kernelPanic('MODULE_NOT_FOUND')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar USB',i:'🔌',f:function(){toast('USB','Puertos deshabilitados.','error',3000)}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar teclado',i:'⌨️',f:function(){toast('Teclado','Sin respuesta.','error',3000)}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar Bluetooth',i:'📶',f:function(){toast('Bluetooth','Apagado.','warn')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar WiFi',i:'📡',f:function(){applyEffect('no-network')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar audio',i:'🔇',f:function(){applyEffect('no-audio')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar red',i:'🌐',f:function(){applyEffect('no-network')}},
+{cat:'🔧 Hardware y drivers',n:'Bloquear firmware',i:'🔒',f:function(){kernelPanic('BIOS_LOCKED')}},
+{cat:'🔧 Hardware y drivers',n:'TPM roto',i:'🔐',f:function(){kernelPanic('TPM_DEVICE_FAILURE')}},
+{cat:'🔧 Hardware y drivers',n:'Memoria al 100%',i:'🧠',f:function(){damage.lowMem=true;applyDamageVisuals()}},
+{cat:'🔧 Hardware y drivers',n:'Corromper microcódigo',i:'⚙️',f:function(){kernelPanic('MACHINE_CHECK_EXCEPTION')}},
+{cat:'🔧 Hardware y drivers',n:'Fallar todos los módulos',i:'💥',f:function(){kernelPanic('DRIVER_IRQL_NOT_LESS_OR_EQUAL')}},
+
+/* 🔒 Red y seguridad */
+{cat:'🔒 Red y seguridad',n:'Deshabilitar firewall',i:'🔥',f:function(){toast('Firewall','Deshabilitado.','warn')}},
+{cat:'🔒 Red y seguridad',n:'Borrar reglas iptables',i:'📋',f:function(){toast('iptables','Reglas eliminadas.','warn')}},
+{cat:'🔒 Red y seguridad',n:'Desinstalar antivirus',i:'🛡️',f:function(){applyEffect('defender-dead')}},
+{cat:'🔒 Red y seguridad',n:'Desactivar AppArmor',i:'🛡️',f:function(){applyEffect('defender-dead')}},
+{cat:'🔒 Red y seguridad',n:'LUKS sin clave',i:'🔐',f:function(){killSystem()}},
+{cat:'🔒 Red y seguridad',n:'Romper PAM',i:'👤',f:function(){kernelPanic('PAM: authentication failure for all users')}},
+{cat:'🔒 Red y seguridad',n:'Borrar /etc/shadow',i:'🔑',f:function(){deleteFromVFS('/etc/shadow');kernelPanic('auth: /etc/shadow missing')}},
+{cat:'🔒 Red y seguridad',n:'Bloquear /etc/passwd',i:'🗝️',f:function(){deleteFromVFS('/etc/passwd');kernelPanic('login: cannot open /etc/passwd')}},
+{cat:'🔒 Red y seguridad',n:'Tumbar DNS',i:'🌐',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Borrar cert. raíz',i:'📜',f:function(){toast('Certificados','Eliminados.','error',3000)}},
+{cat:'🔒 Red y seguridad',n:'DNS blackhole',i:'🕳️',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Inundar red',i:'🌊',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Cerrar puertos',i:'🚫',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Packet flood',i:'🦈',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Hackear VPN',i:'🔓',f:function(){applyEffect('no-network')}},
+
+/* 💾 Disco */
+{cat:'💾 Disco y FS',n:'Formatear /',i:'💣',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Corromper ext4',i:'📁',f:function(){kernelPanic('EXT4-fs error: unable to read itable block')}},
+{cat:'💾 Disco y FS',n:'Marcar volumen sucio',i:'🚩',f:function(){kernelPanic('NTFS_FILE_SYSTEM')}},
+{cat:'💾 Disco y FS',n:'Comprimir todo',i:'🗜️',f:function(){damage.fontCorrupt=true;applyDamageVisuals()}},
+{cat:'💾 Disco y FS',n:'Reducir a 0 bytes',i:'📉',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Eliminar swap',i:'📄',f:function(){deleteFromVFS('/swapfile')}},
+{cat:'💾 Disco y FS',n:'Eliminar hibernación',i:'💤',f:function(){toast('Hibernación','Deshabilitada.','warn')}},
+{cat:'💾 Disco y FS',n:'Borrar todos los logs',i:'📋',f:function(){damage.logsDead=true;applyDamageVisuals()}},
+{cat:'💾 Disco y FS',n:'Corromper locate',i:'🔍',f:function(){toast('locate','Índice corrupto.','warn')}},
+{cat:'💾 Disco y FS',n:'Fragmentación extrema',i:'🧩',f:function(){kernelPanic('DISK_FRAGMENTATION_FAILURE')}},
+{cat:'💾 Disco y FS',n:'Convertir a LVM roto',i:'💽',f:function(){kernelPanic('LVM_VOLUME_FAILURE')}},
+{cat:'💾 Disco y FS',n:'Quitar letra de unidad',i:'🔠',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Montar /dev/null en /',i:'📂',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Sobrescribir con ceros',i:'0️⃣',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Cifrar sin clave',i:'🔐',f:function(){killSystem()}},
+
+/* 🌪️ Caos */
+{cat:'🌪️ Caos aleatorio',n:'Corromper fuentes',i:'🔤',f:function(){applyEffect('corrupt-text')}},
+{cat:'🌪️ Caos aleatorio',n:'Locale corrupto',i:'🌐',f:function(){applyEffect('corrupt-text')}},
+{cat:'🌪️ Caos aleatorio',n:'Desincronizar reloj',i:'⏰',f:function(){toast('Reloj','Hora desincronizada.','warn')}},
+{cat:'🌪️ Caos aleatorio',n:'Codificación rota',i:'🔡',f:function(){applyEffect('corrupt-text')}},
+{cat:'🌪️ Caos aleatorio',n:'Cursor gigante',i:'🖱️',f:function(){document.body.style.cursor='crosshair'}},
+{cat:'🌪️ Caos aleatorio',n:'Pantalla invertida',i:'🖥️',f:function(){document.documentElement.style.filter='invert(1) hue-rotate(180deg)';setTimeout(function(){document.documentElement.style.filter=''},5000)}},
+{cat:'🌪️ Caos aleatorio',n:'Alto contraste',i:'🎨',f:function(){damage.gpuFailed=true;applyDamageVisuals()}},
+{cat:'🌪️ Caos aleatorio',n:'Narrador constante',i:'🔊',f:function(){var iv=setInterval(function(){toast('Narrador','Leyendo pantalla...','info',1500)},3000);setTimeout(function(){clearInterval(iv)},15000)}},
+{cat:'🌪️ Caos aleatorio',n:'Fork bomb',i:'🌊',f:function(){triggerForkBomb()}},
+{cat:'🌪️ Caos aleatorio',n:'Bucle de reinicio',i:'🔄',f:function(){applyEffect('no-os')}}
+];
+
+/* VFS Linux */
+function mkfile(c){return{type:'file',content:String(c||''),modified:Date.now(),size:String(c||'').length}}
+function mkdir(ch){return{type:'dir',content:ch||{},modified:Date.now()}}
+function createVFS(){
+  return {'root':mkdir({
+    'bin':mkdir({'bash':mkfile('ELF'),'ls':mkfile('ELF'),'cp':mkfile('ELF'),'mv':mkfile('ELF'),'rm':mkfile('ELF')}),
+    'sbin':mkdir({'init':mkfile('ELF'),'fsck':mkfile('ELF'),'reboot':mkfile('ELF')}),
+    'boot':mkdir({'vmlinuz':mkfile('kernel'),'initrd.img':mkfile('initrd'),'vmlinuz.old':mkfile('kernel'),'grub':mkdir({'grub.cfg':mkfile('menuentry...'),'x86_64-efi':mkdir({})})}),
+    'dev':mkdir({'sda':mkfile('block'),'null':mkfile('char'),'zero':mkfile('char')}),
+    'etc':mkdir({
+      'passwd':mkfile('root:x:0:0:root:/root:/bin/bash\nusuario:x:1000:1000:usuario:/home/usuario:/bin/bash'),
+      'shadow':mkfile('root:!:19000:0:99999:7:::\nusuario:$6$...:19000:0:99999:7:::'),
+      'fstab':mkfile('UUID=xxxx / ext4 defaults 0 1'),
+      'hostname':mkfile('ubuntu'),
+      'hosts':mkfile('127.0.0.1 localhost'),
+      'apt':mkdir({'sources.list':mkfile('deb http://archive.ubuntu.com/ubuntu noble main')}),
+      'sudoers':mkfile('root ALL=(ALL:ALL) ALL'),
+      'ssh':mkdir({'sshd_config':mkfile('Port 22')}),
+      'systemd':mkdir({'system':mkdir({'multi-user.target':mkfile('...')})}),
+      'pam.d':mkdir({}),
+      'apparmor.d':mkdir({}),
+      'ssl':mkdir({'certs':mkdir({})})
+    }),
+    'home':mkdir({
+      'usuario':mkdir({
+        'Escritorio':mkdir({'bienvenido.txt':mkfile('Bienvenido a Ubuntu 24.04 🐧\n\nPort de BoxOS 11.\nMismas 70 destrucciones.\n\nPrueba con: sudo rm -rf /')}),
+        'Documentos':mkdir({}),
+        'Descargas':mkdir({}),
+        'Imágenes':mkdir({}),
+        '.bashrc':mkfile('export PS1="\\u@\\h:\\w$ "'),
+        '.config':mkdir({'gnome':mkdir({})}),
+        '.local':mkdir({'share':mkdir({})})
+      })
+    }),
+    'lib':mkdir({
+      'x86_64-linux-gnu':mkdir({'libc.so.6':mkfile('ELF'),'ld-linux-x86-64.so.2':mkfile('ELF')}),
+      'systemd':mkdir({'systemd':mkfile('ELF'),'systemd-journald':mkfile('ELF')}),
+      'modules':mkdir({})
+    }),
+    'lib64':mkdir({'ld-linux-x86-64.so.2':mkfile('symlink')}),
+    'media':mkdir({}),'mnt':mkdir({}),'opt':mkdir({}),'proc':mkdir({}),
+    'root':mkdir({'.bashrc':mkfile('export PS1="# "')}),
+    'run':mkdir({}),'srv':mkdir({}),'sys':mkdir({}),'tmp':mkdir({}),
+    'usr':mkdir({
+      'bin':mkdir({'sudo':mkfile('ELF'),'python3':mkfile('ELF'),'apt':mkfile('ELF'),'vim':mkfile('ELF')}),
+      'sbin':mkdir({}),'lib':mkdir({}),'libexec':mkdir({}),'share':mkdir({}),'include':mkdir({}),'local':mkdir({})
+    }),
+    'var':mkdir({
+      'log':mkdir({'syslog':mkfile('...'),'auth.log':mkfile('...')}),
+      'cache':mkdir({'apt':mkdir({})}),
+      'lib':mkdir({'dpkg':mkdir({'status':mkfile('...')})}),
+      'spool':mkdir({}),'tmp':mkdir({}),'www':mkdir({})
+    }),
+    'swapfile':mkfile('swap'),
+    'README.txt':mkfile('Ubuntu 24.04 GNOME · Ultra Destructible · Port de BoxOS 11')
+  })};
+}
+function splitPath(p){return String(p).split('/').filter(Boolean)}
+function getNode(path){
+  if(isDiskDestroyed)return null;
+  var parts=splitPath(path);if(!parts.length)return null;
+  var node=vfs[parts[0]];if(!node)return null;
+  for(var i=1;i<parts.length;i++){if(node.type!=='dir'||!node.content[parts[i]])return null;node=node.content[parts[i]]}
+  return node;
+}
+function getParentPath(p){var a=splitPath(p);a.pop();return a.join('/')||'root'}
+function joinPath(a,b){return a.replace(/\/$/,'')+'/'+b}
+function deleteFromVFS(canonical){
+  var parts=canonical.split('/').filter(Boolean);
+  if(!parts.length)return false;
+  var candidates=[parts];
+  if(parts[0]!=='root')candidates.push(['root'].concat(parts));
+  for(var c=0;c<candidates.length;c++){
+    var node=vfs;
+    for(var i=0;i<candidates[c].length;i++){
+      if(node.type==='dir'&&node.content[candidates[c][i]])node=node.content[candidates[c][i]];
+      else{node=null;break}
+    }
+    if(node){
+      var parent=vfs;
+      for(var k=0;k<candidates[c].length-1;k++)parent=parent.content[candidates[c][k]];
+      delete parent.content[candidates[c][candidates[c].length-1]];
+      return true;
+    }
+  }
+  return false;
+}
+var CRITICAL_FILES={
+  '/boot/vmlinuz':{panic:'Kernel panic - VFS: Unable to mount root fs'},
+  '/boot/initrd.img':{panic:'Kernel panic - No init found'},
+  '/boot/grub/grub.cfg':{effect:'grub-broken'},
+  '/sbin/init':{panic:'Kernel panic - Attempted to kill init!'},
+  '/lib/systemd/systemd':{panic:'systemd[1]: Failed to execute'},
+  '/etc/fstab':{panic:'VFS: Cannot open root device'},
+  '/etc/passwd':{panic:'login: cannot open /etc/passwd'},
+  '/etc/shadow':{panic:'auth: /etc/shadow missing'},
+  '/etc/sudoers':{warning:true},
+  '/bin/bash':{panic:'Kernel panic - No working init'},
+  '/usr/bin/sudo':{warning:true},
+  '/lib/x86_64-linux-gnu/libc.so.6':{panic:'Kernel panic - init segfaulted'}
+};
+var PROTECTED_PATHS={
+  'root':{panic:'VFS: Unable to mount root fs',killsSystem:true},
+  'root/boot':{panic:'Kernel panic - no bootable device',killsSystem:true},
+  'root/etc':{panic:'init: cannot open /etc',killsSystem:true},
+  'root/bin':{panic:'Kernel panic - /bin missing',killsSystem:true},
+  'root/usr':{warning:true},
+  'root/home':{inUse:true},
+  'root/home/usuario':{inUse:true}
+};
+
+var APPS={
+  files:{name:'Archivos',icon:'📁',run:function(){openFiles('root/home/usuario')}},
+  terminal:{name:'Terminal',icon:'⬛',run:function(){openTerminal()}},
+  firefox:{name:'Firefox',icon:'🦊',run:function(){openFirefox()}},
+  texteditor:{name:'Editor de texto',icon:'📝',run:function(){openEditor()}},
+  calc:{name:'Calculadora',icon:'🧮',run:function(){openCalculator()}},
+  settings:{name:'Configuración',icon:'⚙️',run:function(){openSettings()}},
+  monitor:{name:'Monitor del sistema',icon:'📊',run:function(){openSystemMonitor()}},
+  disks:{name:'Discos',icon:'💽',run:function(){openDisks()}},
+  dmesg:{name:'Registros',icon:'📋',run:function(){openLogs()}},
+  software:{name:'Software',icon:'🛍️',run:function(){openSoftwareCenter()}},
+  trash:{name:'Papelera',icon:'🗑️',run:function(){openTrash()}},
+  destroy:{name:'Centro Destrucción',icon:'☠️',run:function(){openDestructionCenter()}}
+};
+var DESKTOP_ICONS=[
+  {id:'home',label:'Inicio',icon:'🏠',run:function(){openFiles('root/home/usuario')}},
+  {id:'root',label:'Sistema',icon:'💽',run:function(){openFiles('root')}},
+  {id:'trash',label:'Papelera',icon:'🗑️',run:function(){openTrash()}},
+  {id:'destroy',label:'Centro Destrucción',icon:'☠️',run:function(){openDestructionCenter()}}
+];
+
+/* WM */
+var zTop=100,winCounter=0,activeWin=null,openWindows={},filesStates={};
+function createWindow(opts){
+  var o={};for(var k in opts)o[k]=opts[k];
+  var appId=o.appId;
+  if(isDiskDestroyed&&appId&&appId!=='dialog'){diskBlocked();return 'win-blocked'}
+  if(!o.title)o.title='Ventana';if(!o.icon)o.icon='🪟';if(!o.body)o.body='';
+  if(!o.width)o.width=680;if(!o.height)o.height=440;
+  if(o.resizable===undefined)o.resizable=true;if(o.autoHeight===undefined)o.autoHeight=false;
+  if(!o.appId)o.appId='app';if(o.noPad===undefined)o.noPad=false;
+  var id='win-'+(++winCounter);
+  var el=document.createElement('div');
+  el.className='window opening';el.id=id;el.dataset.app=o.appId;
+  var w=Math.min(o.width,innerWidth-30);
+  el.style.width=w+'px';
+  el.style.height=o.autoHeight?'auto':Math.min(o.height,innerHeight-110)+'px';
+  var off=(winCounter%7)*24;
+  el.style.left=Math.max(80,Math.round((innerWidth-w)/2)-60+off)+'px';
+  el.style.top=Math.max(40,60+off)+'px';
+  el.style.zIndex=++zTop;
+  el.innerHTML='<div class="window-header"><div style="width:80px"></div><div class="window-title">'+esc(o.title)+'</div><div class="window-controls"><button class="wc-btn wc-min" data-win="min">−</button><button class="wc-btn wc-max" data-win="max">□</button><button class="wc-btn wc-close" data-win="close">✕</button></div></div><div class="window-body'+(o.noPad?' no-pad':'')+'"></div>'+((o.resizable&&!o.autoHeight)?'<div class="rz rz-se"></div><div class="rz rz-e"></div><div class="rz rz-s"></div>':'');
+  $('.window-body',el).innerHTML=o.body;
+  document.body.appendChild(el);
+  openWindows[id]={el:el,opts:o,min:false,max:false,prev:null};
+  addDashIndicator(id);wireWindow(id);focusWindow(id);
+  el.addEventListener('animationend',function(){el.classList.remove('opening')},{once:true});
+  return id;
+}
+function addDashIndicator(id){var w=openWindows[id];if(!w)return;var di=$('.dash-item[data-appid="'+w.opts.appId+'"]');if(di)di.classList.add('running')}
+function wireWindow(id){
+  var w=openWindows[id];if(!w)return;var el=w.el;
+  $$('[data-win]',el).forEach(function(b){b.onclick=function(e){e.stopPropagation();var a=b.dataset.win;if(a==='close')closeWindow(id);else if(a==='min')minimizeWindow(id);else if(a==='max')toggleMaximize(id)}});
+  el.addEventListener('mousedown',function(){focusWindow(id)},true);
+  var header=$('.window-header',el);
+  header.addEventListener('pointerdown',function(e){
+    if(e.target.closest('[data-win]'))return;if(w.max)return;
+    e.preventDefault();focusWindow(id);
+    var sx=e.clientX,sy=e.clientY,ox=el.offsetLeft,oy=el.offsetTop;
+    var move=function(ev){el.style.left=(ox+ev.clientX-sx)+'px';el.style.top=Math.max(28,oy+ev.clientY-sy)+'px'};
+    var up=function(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up)};
+    document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+  });
+  header.addEventListener('dblclick',function(e){if(e.target.closest('[data-win]'))return;toggleMaximize(id)});
+  $$('.rz',el).forEach(function(h){
+    h.addEventListener('pointerdown',function(e){
+      e.preventDefault();e.stopPropagation();focusWindow(id);
+      var dir=h.classList.contains('rz-se')?'se':h.classList.contains('rz-e')?'e':'s';
+      var sx=e.clientX,sy=e.clientY,sw=el.offsetWidth,sh=el.offsetHeight;
+      var move=function(ev){if(dir.indexOf('e')>-1)el.style.width=Math.max(340,sw+ev.clientX-sx)+'px';if(dir.indexOf('s')>-1)el.style.height=Math.max(200,sh+ev.clientY-sy)+'px'};
+      var up=function(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up)};
+      document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+    });
+  });
+}
+function focusWindow(id){var w=openWindows[id];if(!w)return;if(w.min)restoreWindow(id,true);w.el.style.zIndex=++zTop;$$('.window').forEach(function(e){e.classList.remove('focused')});w.el.classList.add('focused');activeWin=id;var an=$('#tb-appname');if(an)an.textContent=w.opts.title}
+function minimizeWindow(id){var w=openWindows[id];if(!w||w.min)return;w.min=true;w.el.style.display='none';if(activeWin===id)activeWin=null}
+function restoreWindow(id,silent){var w=openWindows[id];if(!w)return;w.min=false;w.el.style.display='flex';if(!silent){w.el.style.zIndex=++zTop;activeWin=id}}
+function toggleMaximize(id){var w=openWindows[id];if(!w)return;var el=w.el;if(!w.max){w.prev={left:el.style.left,top:el.style.top,width:el.style.width,height:el.style.height};el.style.left='0';el.style.top='28px';el.style.width='100%';el.style.height=(innerHeight-28)+'px';el.classList.add('maximized');w.max=true}else{el.style.left=w.prev.left;el.style.top=w.prev.top;el.style.width=w.prev.width;el.style.height=w.prev.height;el.classList.remove('maximized');w.max=false}}
+function closeWindow(id){var w=openWindows[id];if(!w)return;if(w.opts.appId==='files')delete filesStates[id];w.el.remove();delete openWindows[id];if(activeWin===id)activeWin=null;var stillOpen=Object.keys(openWindows).some(function(k){return openWindows[k].opts.appId===w.opts.appId});if(!stillOpen){var di=$('.dash-item[data-appid="'+w.opts.appId+'"]');if(di)di.classList.remove('running')}var an=$('#tb-appname');if(an)an.textContent='Escritorio'}
+function closeAllWindows(){Object.keys(openWindows).forEach(function(id){closeWindow(id)})}
+
+function renderDash(){
+  var d=$('#dash');if(!d)return;
+  var order=['files','terminal','firefox','texteditor','calc','settings','monitor','disks','dmesg','software','destroy'];
+  d.innerHTML=order.map(function(k){var a=APPS[k];return '<div class="dash-item" data-appid="'+k+'" title="'+esc(a.name)+'" onclick="dashClick(\''+k+'\')">'+a.icon+'</div>'}).join('')+'<div class="dash-sep"></div><div class="dash-item" onclick="openTrash()" title="Papelera">🗑️</div>';
+}
+function dashClick(k){playAudio('click');APPS[k].run()}
+
+function defaultIconPos(i){var col=Math.floor(i/7),row=i%7;return{x:20+col*100,y:20+row*100}}
+function renderDesktopIcons(){
+  var d=$('#desktop');if(!d)return;
+  $$('.desktop-icon',d).forEach(function(e){e.remove()});
+  DESKTOP_ICONS.forEach(function(ic,i){
+    var pos=settings.icons[ic.id]||defaultIconPos(i);
+    var el=document.createElement('div');
+    el.className='desktop-icon';el.dataset.id=ic.id;
+    el.style.left=pos.x+'px';el.style.top=pos.y+'px';
+    var label=settings.iconLabels[ic.id]||ic.label;
+    el.innerHTML='<div class="icon-img">'+ic.icon+'</div><div class="icon-label">'+esc(label)+'</div>';
+    el.addEventListener('mousedown',function(e){e.stopPropagation();$$('.desktop-icon').forEach(function(x){x.classList.remove('selected')});el.classList.add('selected');startIconDrag(e,el,ic)});
+    el.addEventListener('dblclick',function(){playAudio('click');ic.run()});
+    d.appendChild(el);
+  });
+}
+function startIconDrag(e,el,ic){
+  if(e.button!==0)return;
+  var sx=e.clientX,sy=e.clientY,ox=parseInt(el.style.left,10),oy=parseInt(el.style.top,10),moved=false;
+  var move=function(ev){var dx=ev.clientX-sx,dy=ev.clientY-sy;if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;if(!moved)return;el.style.left=Math.max(0,Math.min(innerWidth-100,ox+dx))+'px';el.style.top=Math.max(28,Math.min(innerHeight-150,oy+dy))+'px'};
+  var up=function(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);if(moved)settings.icons[ic.id]={x:parseInt(el.style.left,10),y:parseInt(el.style.top,10)}};
+  document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+}
+function toast(title,msg,type,timeout){
+  msg=msg||'';type=type||'info';timeout=timeout||4500;
+  var c=$('#notifications');
+  var el=document.createElement('div');
+  el.className='toast '+(type==='error'?'err':type==='ok'?'ok':type==='warn'?'warn':'');
+  var icon=type==='error'?'⚠️':type==='ok'?'✅':type==='warn'?'⚠️':'ℹ️';
+  el.innerHTML='<div class="toast-title">'+icon+' '+esc(title)+'</div>'+(msg?'<div class="toast-msg">'+esc(msg)+'</div>':'');
+  c.appendChild(el);
+  setTimeout(function(){el.classList.add('out');setTimeout(function(){el.remove()},320)},timeout);
+  playAudio(type==='error'?'warn':'notify');
+}
+function showDialog(opts){
+  opts=opts||{};
+  var buttons=opts.buttons||[{label:'Aceptar',primary:true}];
+  var id=createWindow({title:opts.title||'Diálogo',icon:opts.icon||'ℹ️',width:opts.width||460,autoHeight:true,resizable:false,appId:'dialog',
+    body:'<div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">'+esc(opts.message||'')+'</div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">'+
+    buttons.map(function(b,i){return '<button class="btn '+(b.primary?'btn-primary':'')+'" data-dlg="'+i+'">'+esc(b.label)+'</button>'}).join('')+'</div>'});
+  var el=document.getElementById(id);if(!el)return id;
+  $$('[data-dlg]',el).forEach(function(b){b.onclick=function(){var o=buttons[+b.dataset.dlg];closeWindow(id);if(o&&o.onClick)o.onClick()}});
+  return id;
+}
+
+/* FILES */
+function openFiles(path){
+  if(isDiskDestroyed){diskBlocked();return}
+  path=path||'root/home/usuario';
+  var existing=null;
+  Object.keys(openWindows).forEach(function(wid){if(openWindows[wid].opts.appId==='files'&&filesStates[wid]){navigateFiles(wid,path);focusWindow(wid);existing=wid}});
+  if(existing)return existing;
+  var id=createWindow({title:'Archivos',icon:'📁',width:820,height:520,appId:'files',noPad:true,
+    body:'<div class="files-wrap"><div class="files-sidebar" id="fsb-'+id+'"></div><div class="files-main"><div class="files-toolbar"><button class="btn" data-fnav="back">◀</button><button class="btn" data-fnav="up">▲</button><div class="files-path"></div></div><div class="files-list"></div><div class="files-status"></div></div></div>'});
+  var el=document.getElementById(id);if(!el)return id;
+  filesStates[id]={path:path,history:[path],hIndex:0};
+  wireFiles(id);renderFiles(id);
+  return id;
+}
+function wireFiles(id){
+  var el=document.getElementById(id);if(!el)return;
+  var st=filesStates[id];if(!st)return;
+  el.addEventListener('click',function(e){
+    var nav=e.target.closest('[data-fnav]');
+    if(nav){var a=nav.dataset.fnav;if(a==='back'&&st.hIndex>0){st.hIndex--;st.path=st.history[st.hIndex];renderFiles(id)}if(a==='up'){var p=getParentPath(st.path);if(p!==st.path)navigateFiles(id,p)}return}
+    var sb=e.target.closest('.files-item[data-path]');if(sb){navigateFiles(id,sb.dataset.path);return}
+    var act=e.target.closest('[data-fact]');
+    if(act){var name=act.dataset.fname,full=joinPath(st.path,name);if(act.dataset.fact==='del'){deleteFromFiles(full,id);e.stopPropagation()}return}
+    var row=e.target.closest('.files-row');if(row){$$('.files-row',el).forEach(function(r){r.classList.remove('sel')});row.classList.add('sel')}
+  });
+  el.addEventListener('dblclick',function(e){
+    var row=e.target.closest('.files-row');if(!row)return;
+    var full=joinPath(st.path,row.dataset.name);
+    var node=getNode(full);if(!node)return;
+    if(node.type==='dir')navigateFiles(id,full);
+    else if(full.match(/\.(txt|log|conf|cfg|list|rc|list)$/))openEditor(full,node.content);
+    else toast('Archivos','Sin app asociada','warn',1800);
+  });
+}
+function navigateFiles(id,path){var st=filesStates[id];if(!st)return;st.path=path;st.history=st.history.slice(0,st.hIndex+1);st.history.push(path);st.hIndex=st.history.length-1;renderFiles(id)}
+function renderFiles(id){
+  var el=document.getElementById(id);if(!el)return;
+  var st=filesStates[id];if(!st)return;
+  var sb=$('#fsb-'+id);
+  if(sb)sb.innerHTML='<div class="files-section">Favoritos</div><div class="files-item" data-path="root/home/usuario"><span>🏠</span><span>Inicio</span></div><div class="files-item" data-path="root/home/usuario/Escritorio"><span>🖥️</span><span>Escritorio</span></div><div class="files-item" data-path="root/home/usuario/Documentos"><span>📄</span><span>Documentos</span></div><div class="files-item" data-path="root/home/usuario/Descargas"><span>⬇️</span><span>Descargas</span></div><div class="files-section">Equipo</div><div class="files-item" data-path="root"><span>💾</span><span>Sistema (/)</span></div><div class="files-item" data-path="root/etc"><span>⚙️</span><span>/etc</span></div><div class="files-item" data-path="root/boot"><span>🥾</span><span>/boot</span></div><div class="files-item" data-path="root/usr"><span>📦</span><span>/usr</span></div><div class="files-item" data-path="root/var"><span>📊</span><span>/var</span></div>';
+  $$('.files-item[data-path]',sb).forEach(function(it){if(it.dataset.path===st.path)it.classList.add('active')});
+  var p=$('.files-path',el);if(p)p.textContent='/'+st.path.replace('root','');
+  if(isDiskDestroyed){var l=$('.files-list',el);if(l)l.innerHTML='<div style="padding:80px 20px;text-align:center;color:var(--text-dim)"><div style="font-size:72px;margin-bottom:14px">💀</div><div style="font-size:15px;font-weight:600;color:var(--danger)">El sistema de archivos fue destruido</div></div>';return}
+  var node=getNode(st.path);if(!node||node.type!=='dir'){var l2=$('.files-list',el);if(l2)l2.innerHTML='<div style="padding:20px;color:var(--text-dim)">Carpeta no disponible.</div>';return}
+  var items=Object.keys(node.content).map(function(name){var it=node.content[name];return{name:name,type:it.type,size:it.type==='file'?(it.size||0):0,modified:it.modified||Date.now()}});
+  items.sort(function(a,b){if(a.type!==b.type)return a.type==='dir'?-1:1;return a.name.localeCompare(b.name)});
+  var list=$('.files-list',el);
+  list.innerHTML=items.map(function(i){
+    var icon=i.type==='dir'?'📁':(i.name.match(/\.(conf|cfg|rc|list)$/)?'⚙️':i.name.match(/^vmlinuz/)?'🐧':i.name.match(/^initrd/)?'📦':i.name.match(/\.so/)?'🧩':'📄');
+    return '<div class="files-row" data-name="'+esc(i.name)+'"><div class="fr-icon">'+icon+'</div><div class="fr-name">'+esc(i.name)+'</div><div class="fr-size">'+(i.type==='dir'?'--':fmtSize(i.size))+'</div><div class="fr-date">'+fmtDate(i.modified)+'</div><button class="btn fr-act" data-fact="del" data-fname="'+esc(i.name)+'">🗑️</button></div>';
+  }).join('')||'<div style="padding:20px;color:var(--text-dim)">Vacío</div>';
+  var stat=$('.files-status',el);if(stat)stat.textContent=items.length+' elementos';
+}
+function deleteFromFiles(full,id){
+  var parts=splitPath(full);var name=parts.pop();
+  var parentPath=parts.join('/')||'root';
+  var p=getNode(parentPath);if(!p||!p.content[name])return;
+  var normalized='/'+parts.slice(1).join('/')+'/'+name;
+  if(parts[0]!=='root')normalized='/'+parts.join('/')+'/'+name;
+  var found=null;Object.keys(CRITICAL_FILES).forEach(function(k){if(k===normalized)found={key:k,reaction:CRITICAL_FILES[k]}});
+  if(found){deleteFromVFS(found.key);if(id)renderFiles(id);reactToDestruction(found.reaction,found.key);return}
+  var found2=null;Object.keys(PROTECTED_PATHS).forEach(function(k){if(k===normalized||k.replace('root','')===normalized||'/'+k.replace('root/','')===normalized)found2={key:k,reaction:PROTECTED_PATHS[k]}});
+  if(found2){var r=found2.reaction;if(r.inUse){playAudio('error');showDialog({title:'No se puede eliminar',icon:'⚠️',message:'"'+name+'" está en uso.'});return}deleteFromVFS(found2.key);if(id)renderFiles(id);reactToDestruction(r,found2.key);return}
+  trash.push({path:full,data:p.content[name],deletedAt:Date.now()});
+  delete p.content[name];
+  if(id)renderFiles(id);
+  toast('Archivos',name+' → Papelera','warn',1800);
+}
+function reactToDestruction(reaction,path){
+  var sn=path.split('/').pop();
+  if(reaction.killsSystem){playAudio('error');toast('Destrucción total','Se eliminó "'+sn+'". El sistema queda inoperable.','error',4500);setTimeout(killSystem,400);setTimeout(function(){kernelPanic(reaction.panic||'Kernel panic - VFS: Unable to mount root fs')},1300);return}
+  if(reaction.panic){playAudio('error');toast('Error crítico','Se eliminó "'+sn+'".','error',3500);setTimeout(function(){kernelPanic(reaction.panic)},900);return}
+  if(reaction.effect){applyEffect(reaction.effect);toast('Componente eliminado',sn,'error',3500);return}
+  if(reaction.warning){toast('Advertencia','Se eliminó '+sn,'warn',4000);return}
+  toast('Eliminado',sn,'warn',2000);
+}
+function applyEffect(effect){
+  if(effect==='no-shell'){damage.shellDead=true;closeAllWindows();applyDamageVisuals();return}
+  if(effect==='corrupt-text'){damage.fontCorrupt=true;applyDamageVisuals();return}
+  if(effect==='no-gpu'){damage.gpuFailed=true;applyDamageVisuals();setTimeout(function(){kernelPanic('GPU_TDR_FAILURE')},2200);return}
+  if(effect==='no-audio'){damage.audioFailed=true;settings.sound=false;applySettings();return}
+  if(effect==='no-network'){damage.networkFailed=true;applyDamageVisuals();return}
+  if(effect==='no-os'){damage.bootloaderGone=true;setTimeout(showGRUB,1200);return}
+  if(effect==='defender-dead'){damage.defenderDead=true;return}
+  if(effect==='overheat'){damage.overheat=true;applyDamageVisuals();return}
+  if(effect==='grub-broken'){damage.bootloaderGone=true;setTimeout(showGRUB,1000);return}
+}
+function applyDamageVisuals(){
+  document.body.classList.toggle('no-shell',damage.shellDead);
+  document.body.classList.toggle('corrupt-text',damage.fontCorrupt);
+  document.body.classList.toggle('no-gpu',damage.gpuFailed);
+  document.body.classList.toggle('no-audio',damage.audioFailed);
+  document.body.classList.toggle('no-network',damage.networkFailed);
+  document.body.classList.toggle('low-mem',damage.lowMem);
+  document.body.classList.toggle('overheat',damage.overheat);
+  document.body.classList.toggle('c-destroyed',isDiskDestroyed);
+  document.body.classList.toggle('safe-mode',safeMode);
+}
+
+/* TERMINAL */
+function openTerminal(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var id=createWindow({title:'usuario@ubuntu: ~',icon:'⬛',width:720,height:440,appId:'terminal',noPad:true,
+    body:'<div class="terminal-body"><div class="terminal-output">Welcome to Ubuntu 24.04.1 LTS\nLast login: '+new Date().toLocaleString()+'\nType "help" for commands.\n</div><div class="terminal-line"><span class="terminal-prompt">usuario@ubuntu:~$ </span><input class="terminal-input" autofocus></div></div>'});
+  var el=document.getElementById(id);if(!el)return id;
+  var input=$('.terminal-input',el),output=$('.terminal-output',el),prompt=$('.terminal-prompt',el);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'){var cmd=input.value.trim();output.textContent+=prompt.textContent+cmd+'\n';input.value='';execCmd(cmd,output);output.scrollTop=output.scrollHeight}});
+  return id;
+}
+function execCmd(cmdStr,output){
+  var parts=cmdStr.split(/\s+/).filter(Boolean);if(!parts.length)return;
+  var cmd=parts[0],args=parts.slice(1),full=parts.join(' ').toLowerCase();
+  if(cmd==='help'){output.textContent+='Commands: help, clear, ls, pwd, cat, rm, sudo, apt, systemctl, kill, killall, dd, mkfs, mount, shutdown, reboot, dmesg, lsblk, panic, forkbomb, matrix\n\n'}
+  else if(cmd==='clear'){output.textContent=''}
+  else if(cmd==='pwd'){output.textContent+='/home/usuario\n\n'}
+  else if(cmd==='ls'){var n=getNode('root/home/usuario');if(n&&n.type==='dir')output.textContent+=Object.keys(n.content).join('  ')+'\n\n';else output.textContent+='\n'}
+  else if(cmd==='whoami'){output.textContent+='usuario\n\n'}
+  else if(cmd==='uname'){output.textContent+='Linux ubuntu 6.8.0-31-generic x86_64 GNU/Linux\n\n'}
+  else if(cmd==='sudo'){
+    if(args[0]==='rm'&&(args[1]==='-rf'||args[1]==='-fr')&&(args[2]==='/'||args[2]==='/etc'||args[2]==='/boot'||args[2]==='/bin')){output.textContent+='Deleting '+args[2]+'...\n';setTimeout(killSystem,900);return}
+    if(args[0]==='dd'){var s=args.join(' ');if(s.indexOf('of=/dev/sda')>-1||s.indexOf('of=/dev/nvme')>-1){output.textContent+='Writing zeros to disk...\n';setTimeout(killSystem,1200);return}}
+    if(args[0]==='mkfs'||args[0].indexOf('mkfs.')===0){output.textContent+='Creating filesystem...\n';setTimeout(killSystem,1300);return}
+    if(args[0]==='kill'&&args[1]==='-9'&&args[2]==='1'){output.textContent+='Killing PID 1...\n';setTimeout(function(){kernelPanic('Attempted to kill init!')},900);return}
+    if(args[0]==='systemctl'&&(args[1]==='poweroff'||args[1]==='reboot')){setTimeout(args[1]==='poweroff'?shutdownOS:restartOS,800);output.textContent+='Systemd: shutting down...\n\n';return}
+    if(args[0]==='chmod'&&args[1]==='000'&&args[2]==='/'){output.textContent+='Chmod 000 /...\n';setTimeout(killSystem,900);return}
+    output.textContent+='Command executed as root.\n\n';
+  }
+  else if(cmd==='rm'){
+    if(full.indexOf('rm -rf /')>-1||args.some(function(a){return a==='/'||a==='/etc'||a==='/boot'||a==='/bin'})){
+      output.textContent+='rm: it is dangerous to operate recursively on \'/\'\n';
+      output.textContent+='rm: use --no-preserve-root to override\n\nRemoving files...\n';
+      setTimeout(killSystem,1400);
+      return;
+    }
+    output.textContent+='rm: cannot remove \''+args.join(' ')+'\': Permission denied\n\n';
+  }
+  else if(cmd==='dd'){if(full.indexOf('of=/dev/sda')>-1||full.indexOf('of=/dev/nvme')>-1){output.textContent+='dd: writing zeros to disk...\n';setTimeout(killSystem,1200);return}output.textContent+='dd: missing operand\n\n'}
+  else if(cmd==='mkfs'||cmd.indexOf('mkfs.')===0){output.textContent+='mkfs: formatting device...\n';setTimeout(killSystem,1200)}
+  else if(cmd==='kill'){if(args[0]==='-9'&&args[1]==='1'){output.textContent+='kill -9 1...\n';setTimeout(function(){kernelPanic('Attempted to kill init!')},900);return}output.textContent+='Killed process\n\n'}
+  else if(cmd==='killall'){if(args[0]==='systemd'||args[0]==='init'||args[0]==='gnome-shell'){output.textContent+='Killing '+args[0]+'...\n';setTimeout(function(){kernelPanic('init died')},900);return}output.textContent+='No matching processes\n\n'}
+  else if(cmd==='systemctl'){
+    var sub=args[0]||'',tgt=args[1]||'';
+    if(sub==='poweroff'||tgt==='poweroff.target'){output.textContent+='Shutting down...\n';setTimeout(shutdownOS,800);return}
+    if(sub==='reboot'||tgt==='reboot.target'){output.textContent+='Rebooting...\n';setTimeout(restartOS,800);return}
+    if(sub==='stop'&&tgt==='systemd-logind'){output.textContent+='Stopping logind...\n';setTimeout(function(){kernelPanic('systemd: logind terminated')},900);return}
+    output.textContent+='systemctl: unit '+tgt+' not found\n\n';
+  }
+  else if(cmd==='init'){if(args[0]==='0'){output.textContent+='init: shutting down...\n';setTimeout(shutdownOS,800)}else if(args[0]==='6'){output.textContent+='init: rebooting...\n';setTimeout(restartOS,800)}else if(args[0]==='1'||args[0]==='s'){output.textContent+='init: single-user mode...\n';showTTY()}else output.textContent+='init: invalid runlevel\n\n'}
+  else if(cmd==='panic'){output.textContent+='Triggering kernel panic...\n';setTimeout(function(){kernelPanic('Kernel panic - Manually triggered')},600)}
+  else if(cmd==='forkbomb'){output.textContent+='Running :(){ :|:& };:...\n';triggerForkBomb()}
+  else if(cmd==='shutdown'){output.textContent+='Shutting down...\n';setTimeout(shutdownOS,800)}
+  else if(cmd==='reboot'){output.textContent+='Rebooting...\n';setTimeout(restartOS,800)}
+  else if(cmd==='dmesg'){output.textContent+='[    0.000000] Linux version 6.8.0-31-generic\n[   15.120000] All systems nominal\n\n'}
+  else if(cmd==='lsblk'){output.textContent+='NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS\nsda      8:0    0  500G  0 disk\n└─sda1   8:1    0  499G  0 part /\n\n'}
+  else if(cmd==='df'){output.textContent+='Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       499G   45G  429G  10% /\n\n'}
+  else if(cmd==='matrix'){output.textContent+='0101010101010101010101010101\n1010101010101010101010101010\n'}
+  else output.textContent+='bash: '+cmd+': command not found\n\n';
+}
+
+/* EDITOR / CALC / FIREFOX / SETTINGS / MONITOR / DISKS / LOGS / SOFTWARE / TRASH */
+function openEditor(path,content){if(isDiskDestroyed){diskBlocked();return}var id=createWindow({title:path?'Editor — '+path.split('/').pop():'Editor',icon:'📝',width:560,height:400,appId:'editor',body:'<textarea style="width:100%;height:100%;background:transparent;color:var(--text);border:none;outline:none;resize:none;font-family:Cascadia Mono,monospace;font-size:12.5px;line-height:1.6;padding:8px">'+(content||'').replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c]})+'</textarea>'});var el=document.getElementById(id);if(!el)return id;$('textarea',el).addEventListener('keydown',function(e){e.stopPropagation()});return id}
+function openCalculator(){if(isDiskDestroyed){diskBlocked();return}var id=createWindow({title:'Calculadora',icon:'🧮',width:280,autoHeight:true,appId:'calc',body:'<div style="display:flex;flex-direction:column;gap:8px"><input id="calc-d" style="font-size:26px;text-align:right;padding:12px;background:rgba(0,0,0,.3);border:none;border-radius:8px;color:var(--text)" value="0" readonly><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'+['C','±','%','÷','7','8','9','×','4','5','6','−','1','2','3','+','0','.','√','='].map(function(b){var isOp=['÷','×','−','+','=','C','±','%','√'].indexOf(b)>-1;return '<button data-k="'+b+'" style="padding:14px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer;background:'+(isOp?'var(--accent)':'var(--hover)')+';color:'+(isOp?'#fff':'var(--text)')+'">'+b+'</button>'}).join('')+'</div></div>'});var el=document.getElementById(id);if(!el)return id;var disp=$('#calc-d',el),expr='';$$('[data-k]',el).forEach(function(b){b.onclick=function(){var v=b.dataset.k;if(v==='C'){expr='';disp.value='0'}else if(v==='='){try{disp.value=eval(expr.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-').replace(/√/g,'Math.sqrt'));expr=disp.value}catch(e){disp.value='Error';expr=''}}else{expr+=v;disp.value=expr}}});return id}
+function openFirefox(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Mozilla Firefox',icon:'🦊',width:760,height:500,appId:'firefox',noPad:true,body:'<div style="display:flex;flex-direction:column;height:100%"><div class="files-toolbar"><input style="flex:1;background:var(--input-bg);border:none;color:var(--text);padding:6px 12px;border-radius:16px;font-size:12.5px" value="https://www.ubuntu.com" readonly></div><div style="flex:1;padding:40px;background:#fff;color:#111;text-align:center">'+(damage.networkFailed?'<p style="color:#c00;font-size:16px">⚠ No hay conexión</p>':'<h1 style="font-weight:300">Mozilla Firefox</h1>')+'</div></div>'})}
+function openSettings(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Configuración',icon:'⚙️',width:680,height:480,appId:'settings',body:'<div style="display:flex;gap:14px;height:100%"><div style="width:180px;background:var(--sidebar);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;font-size:12.5px"><div class="files-item active">🖥️ Acerca de</div><div class="files-item">🎨 Apariencia</div><div class="files-item">🔊 Sonido</div><div class="files-item">🌐 Red</div><div class="files-item">🔐 Privacidad</div></div><div style="flex:1;padding:6px"><h3>Acerca de</h3><br><div style="padding:10px 0;border-bottom:1px solid var(--win-border)">Nombre: ubuntu</div><div style="padding:10px 0;border-bottom:1px solid var(--win-border)">SO: Ubuntu 24.04.1 LTS</div><div style="padding:10px 0;border-bottom:1px solid var(--win-border)">Kernel: Linux 6.8.0-31-generic</div><div style="padding:10px 0;border-bottom:1px solid var(--win-border)">Salud: '+systemHealth+'%</div><div style="padding:16px 0"><button class="btn btn-danger" onclick="location.reload()">Restablecer</button></div></div></div>'})}
+function openSystemMonitor(){if(isDiskDestroyed){diskBlocked();return}var rows=[{name:'systemd',cpu:'0.0',mem:'12 MB'},{name:'gnome-shell',cpu:'4.5',mem:'245 MB'},{name:'Xwayland',cpu:'1.2',mem:'82 MB'},{name:'pipewire',cpu:'0.1',mem:'14 MB'},{name:'nautilus',cpu:'0.3',mem:'68 MB'}];var html='<div style="display:flex;justify-content:space-between;margin-bottom:10px"><b>Procesos</b></div><table style="width:100%;font-size:12.5px;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid var(--win-border)"><th style="padding:6px">Nombre</th><th>% CPU</th><th>Memoria</th></tr></thead><tbody>'+rows.map(function(r){return '<tr style="border-bottom:1px solid var(--win-border)"><td style="padding:6px">'+r.name+'</td><td>'+r.cpu+'</td><td>'+r.mem+'</td></tr>'}).join('')+'</tbody></table>';return createWindow({title:'Monitor del sistema',icon:'📊',width:620,height:440,appId:'monitor',body:html})}
+function openDisks(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Discos',icon:'💽',width:620,height:440,appId:'disks',body:'<div style="display:flex;gap:14px"><div style="width:220px;background:var(--sidebar);border-radius:8px;padding:10px;font-size:12.5px"><div class="files-item active">💽 500 GB Disk</div><div class="files-item">📀 /dev/sda1 ext4</div></div><div style="flex:1"><h3>/dev/sda</h3><br><div style="padding:8px 0">Tipo: SSD</div><div style="padding:8px 0">Tamaño: 500 GB</div><br><button class="btn btn-danger" onclick="killSystem()">Formatear</button></div></div>'})}
+function openLogs(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Registros',icon:'📋',width:640,height:400,appId:'logs',body:'<pre style="font-family:Cascadia Mono,monospace;font-size:12px;color:var(--text-dim)">[ OK ] Started GNOME Display Manager.\n[ OK ] Reached target Graphical Interface.\n[ OK ] Started Network Manager.</pre>'})}
+function openSoftwareCenter(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Software de Ubuntu',icon:'🛍️',width:740,height:500,appId:'software',body:'<h3 style="margin-bottom:14px">Apps destacadas</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"><div style="background:var(--hover);padding:14px;border-radius:8px"><b>🛡️ GUFW</b></div><div style="background:var(--hover);padding:14px;border-radius:8px"><b>💥 BleachBit</b></div><div style="background:var(--hover);padding:14px;border-radius:8px"><b>☠️ Centro Destrucción</b><br><button class="btn btn-primary" style="margin-top:8px;padding:4px 10px" onclick="openDestructionCenter()">Abrir</button></div></div>'})}
+function openTrash(){if(isDiskDestroyed){diskBlocked();return}var html=trash.length?trash.map(function(t){return '<div style="padding:8px;border-bottom:1px solid var(--win-border);font-size:12.5px">🗑️ '+esc(t.path)+'</div>'}).join(''):'<div style="padding:20px;color:var(--text-dim)">Vacía</div>';createWindow({title:'Papelera',icon:'🗑️',width:560,height:400,appId:'trash',body:'<div style="padding:10px"><button class="btn btn-danger" style="margin-bottom:10px" onclick="trash=[];toast(\'Papelera\',\'Vaciada\',\'ok\',1500);closeAllWindows()">Vaciar</button>'+html+'</div>'})}
+
+/* DESTRUCTION CENTER */
+function openDestructionCenter(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var cats={};
+  DESTRUCTIONS_70.forEach(function(d,i){(cats[d.cat]=cats[d.cat]||[]).push({d:d,idx:i})});
+  var html='<div style="padding:6px 4px"><div style="font-size:13px;color:var(--danger);font-weight:700;margin-bottom:4px">☠️ '+DESTRUCTIONS_70.length+' formas de destruir Linux</div><div style="font-size:11.5px;color:var(--text-dim);margin-bottom:8px">Port de BoxOS 11 — misma funcionalidad</div>';
+  Object.keys(cats).forEach(function(cat){
+    html+='<div class="dc-cat">'+esc(cat)+' ('+cats[cat].length+')</div><div class="dc-grid">';
+    cats[cat].forEach(function(item){html+='<button class="dc-btn" data-d70="'+item.idx+'">'+item.d.i+' '+esc(item.d.n)+'</button>'});
+    html+='</div>';
+  });
+  html+='<div style="display:flex;gap:8px;margin-top:10px"><button class="dc-btn" data-dc="all" style="background:var(--danger);color:#fff;border-color:var(--danger);padding:10px 16px">☢️ Ejecutar TODAS</button><button class="dc-btn" data-dc="random" style="padding:10px 16px">🎲 Aleatoria</button></div></div>';
+  var id=createWindow({title:'Centro de Destrucción · Linux',icon:'☠️',width:800,height:580,appId:'destroy',body:html});
+  var el=document.getElementById(id);if(!el)return id;
+  $$('[data-d70]',el).forEach(function(b){b.onclick=function(){try{DESTRUCTIONS_70[+b.dataset.d70].f()}catch(e){}}});
+  $$('[data-dc]',el).forEach(function(b){b.onclick=function(){
+    if(b.dataset.dc==='all'){if(!confirm('¿Ejecutar las 70 destrucciones?'))return;var i=0;var iv=setInterval(function(){if(i>=DESTRUCTIONS_70.length||isDiskDestroyed){clearInterval(iv);return}try{DESTRUCTIONS_70[i].f()}catch(e){}i++},250)}
+    else{var r=DESTRUCTIONS_70[rnd(0,DESTRUCTIONS_70.length-1)];try{r.f()}catch(e){}toast('🎲 Aleatoria',r.i+' '+r.n,'warn',2500)}
+  }});
+  return id;
+}
+
+/* SCREENS */
+function kernelPanic(reason){
+  reason=reason||'Kernel panic - not syncing: Fatal exception';
+  playAudio('panic');
+  var s=$('#kernel-panic');
+  var dump=$('#kp-dump'),blame=$('#kp-blame'),title=$('#kp-title');
+  if(title)title.textContent='[ 0.000000] Kernel panic - not syncing: '+reason.slice(0,60);
+  var regs=['RIP: 0010:kernel_init+0x0/0x10','RSP: 0018:ffffb8c1c0b0be78','RAX: 0000000000000000','RBX: ffff94204488a400'].join('\n');
+  if(dump)dump.textContent='CPU: 0 PID: 1 Comm: init Not tainted 6.8.0-31-generic\nHardware name: QEMU Standard PC\n'+regs+'\n\nCall Trace:\n <TASK>\n ? __die+0x23/0x70\n ? page_fault_oops+0x171/0x4e0\n ? exc_page_fault+0x7f/0x180\n panic+0x31e/0x350\n kernel_init+0x0/0x10\n </TASK>\n\n---[ end trace 0000000000000000 ]---';
+  if(blame)blame.textContent=reason;
+  s.style.display='flex';
+}
+function showGRUB(){
+  var g=$('#grub-screen');if(!g)return;
+  g.style.display='flex';
+  setTimeout(function(){
+    g.style.display='none';
+    if(damage.bootloaderGone){kernelPanic('GRUB: Unknown filesystem. grub rescue>')}
+    else{startSystemdBoot()}
+  },2500);
+}
+function startSystemdBoot(){
+  var s=$('#systemd-boot');if(!s)return;
+  s.innerHTML='';s.style.display='flex';
+  var lines=['<span class="sb-dim">[    0.000000]</span> Linux version 6.8.0-31-generic','<span class="sb-dim">[    0.150000]</span> Command line: BOOT_IMAGE=/boot/vmlinuz','<span class="sb-ok">[  OK  ]</span> Reached target Basic System.','<span class="sb-ok">[  OK  ]</span> Started Journal Service.','<span class="sb-ok">[  OK  ]</span> Started Network Manager.','<span class="sb-ok">[  OK  ]</span> Started GNOME Display Manager.','<span class="sb-ok">[  OK  ]</span> Reached target Graphical Interface.','<span class="sb-dim">[   15.120000]</span> Login screen ready.'];
+  var i=0;
+  var iv=setInterval(function(){
+    s.innerHTML+=lines[i]+'<br>';i++;
+    if(i>=lines.length){clearInterval(iv);setTimeout(function(){s.style.display='none';playAudio('startup');toast('Bienvenido','Sesión iniciada como '+settings.username,'ok',2000)},700)}
+  },180);
+}
+function showTTY(){var t=$('#tty-login');if(t)t.style.display='flex';var inp=$('#tty-user');if(inp)inp.focus()}
+function restartOS(){
+  closeAllWindows();
+  ['kernel-panic','recovery-screen','tty-login','systemd-boot','grub-screen','shutdown-screen','ransomware'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none'});
+  ransomwareActive=false;clearInterval(ransomwareTimer);
+  if(isDiskDestroyed){applyDamageVisuals();toast('Sistema inoperable','El disco está destruido. Recarga (F5).','error',8000);return}
+  if(damage.bootloaderGone){showGRUB();return}
+  startSystemdBoot();
+}
+function shutdownOS(){closeAllWindows();var s=$('#shutdown-screen');s.style.display='flex';setTimeout(function(){var st=$('#shutdown-text');if(st)st.textContent='El equipo está apagado. Recarga la página.';var sp=$('.spinner',s);if(sp)sp.style.display='none'},2000)}
+function cleanRansomware(){ransomwareActive=false;clearInterval(ransomwareTimer);var r=$('#ransomware');if(r)r.style.display='none';toast('Ransomware eliminado','Archivos desencriptados.','ok',4000)}
+function triggerRansomware(){ransomwareActive=true;$('#ransomware').style.display='flex';var t=300;clearInterval(ransomwareTimer);ransomwareTimer=setInterval(function(){t--;var m=String(Math.floor(t/60)).padStart(2,'0'),s=String(t%60).padStart(2,'0');var te=$('#ransom-timer');if(te)te.textContent=m+':'+s;if(t<=0){clearInterval(ransomwareTimer);kernelPanic('RANSOMWARE_EXPIRED')}},1000)}
+function payRansom(){toast('Error','Transacción fallida.','error')}
+function triggerForkBomb(){toast('Fork bomb','Ejecutando :(){ :|:& };:','error',2000);var c=0;forkBombInterval=setInterval(function(){c++;createWindow({title:'Fork #'+c,icon:'💥',width:260,height:160,appId:'chaos',body:'<div style="padding:20px">Bifurcando...</div>'});if(c>25){clearInterval(forkBombInterval);kernelPanic('Out of memory - Killed process systemd')}},100)}
+function triggerMiner(){if(minerInterval)return;toast('CryptoMiner','Minando al 100%...','warn',3000);damage.overheat=true;damage.lowMem=true;applyDamageVisuals();minerInterval=setInterval(function(){systemHealth=Math.max(0,systemHealth-3);if(systemHealth<=0){clearInterval(minerInterval);kernelPanic('CPU_OVERHEAT')}},2000)}
+function triggerKeylogger(){if(keyloggerInterval)return;toast('Keylogger','Registrando...','error',3000);keyloggerInterval=setInterval(function(){if(Math.random()<.3)toast('Keylogger','Tecla capturada','warn',800)},3000);setTimeout(function(){clearInterval(keyloggerInterval);keyloggerInterval=null},20000)}
+function triggerTrojan(){toast('Trojan','Puerta trasera.','error',4000);setTimeout(function(){applyEffect('no-network')},4000)}
+function triggerRootkit(){toast('Rootkit','En el kernel...','error',4000);setTimeout(function(){kernelPanic('KERNEL_DATA_INPAGE_ERROR')},3500)}
+function triggerWorm(){toast('Worm','Propagándose...','error',4000);setTimeout(function(){applyEffect('no-network')},2500);setTimeout(function(){kernelPanic('NETWORK_STACK_CORRUPTION')},6000)}
+
+/* OVERVIEW */
+function toggleOverview(){
+  var o=$('#overview');
+  if(!o.classList.contains('open')){
+    var g=$('#ov-grid');
+    g.innerHTML=Object.keys(openWindows).map(function(id){var w=openWindows[id];return '<div class="ov-card" data-tv="'+id+'"><div class="ov-card-title"><span>'+w.opts.icon+'</span><span>'+esc(w.opts.title)+'</span></div><div class="ov-card-prev">'+w.opts.icon+'</div></div>'}).join('')||'<div style="color:#fff;opacity:.6;grid-column:1/-1">No hay ventanas abiertas.</div>';
+    $$('.ov-card',g).forEach(function(c){c.onclick=function(){o.classList.remove('open');focusWindow(c.dataset.tv)}});
+    var ag=$('#ov-apps');
+    ag.innerHTML=Object.keys(APPS).map(function(k){return '<div class="ov-app" data-app="'+k+'"><div class="ov-app-icon">'+APPS[k].icon+'</div><div class="ov-app-name">'+esc(APPS[k].name)+'</div></div>'}).join('');
+    $$('.ov-app',ag).forEach(function(el){el.onclick=function(){o.classList.remove('open');APPS[el.dataset.app].run()}});
+  }
+  o.classList.toggle('open');
+}
+function toggleFlyout(id){var f=document.getElementById(id);if(!f)return;var open=f.style.display==='block';$$('.flyout').forEach(function(x){x.style.display='none'});if(!open)f.style.display='block'}
+function applySettings(){document.body.classList.toggle('light',settings.theme==='light');var d=$('#desktop');if(d)d.className=settings.wallpaper+(safeMode?' safe-mode':'')}
+function updateClock(){var d=new Date();var c=$('#tb-clock');if(c)c.textContent=d.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'})+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+
+/* CTX MENU */
+document.addEventListener('contextmenu',function(e){
+  e.preventDefault();
+  var icon=e.target.closest('.desktop-icon');
+  if(icon){
+    var ic=DESKTOP_ICONS.find(function(i){return i.id===icon.dataset.id});
+    if(!ic)return;
+    showCtx(e.clientX,e.clientY,[{label:'Abrir',icon:'📂',action:function(){ic.run()}},{label:'Propiedades',icon:'ℹ️',action:function(){showDialog({title:ic.label,message:'Carpeta de usuario'})}}]);
+  }
+});
+function showCtx(x,y,items){var m=$('#ctx-menu');m.innerHTML=items.map(function(it,i){return '<div class="ctx-item" data-i="'+i+'"><span>'+it.icon+'</span><span>'+esc(it.label)+'</span></div>'}).join('');m.style.display='block';m.style.left=Math.min(x,innerWidth-m.offsetWidth-6)+'px';m.style.top=Math.min(y,innerHeight-m.offsetHeight-6)+'px';$$('.ctx-item',m).forEach(function(el){el.onclick=function(){hideContextMenu();var it=items[+el.dataset.i];if(it&&it.action)it.action()}})}
+function hideContextMenu(){var m=$('#ctx-menu');if(m)m.style.display='none'}
+document.addEventListener('click',function(e){if(!e.target.closest('#ctx-menu'))hideContextMenu()});
+
+/* TTY */
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&e.target&&e.target.id==='tty-user'){var v=e.target.value;if(v==='root'||v==='usuario'){e.target.parentElement.innerHTML='Password: <input type="password" id="tty-pass" style="background:transparent;border:none;color:#d0d0d0;outline:none;font-family:inherit;font-size:14px" autofocus>'}else{toast('Login incorrecto','Prueba con "root" o "usuario"','error')}}
+  if(e.key==='Enter'&&e.target&&e.target.id==='tty-pass'){toast('Login TTY','Acceso concedido. Recargando...','ok',2000);setTimeout(function(){location.reload()},2000)}
+  if(e.key==='Escape'){var o=$('#overview');if(o)o.classList.remove('open');hideContextMenu()}
+});
+
+/* INIT */
+function initUbuntu(){
+  vfs=createVFS();
+  applySettings();
+  renderDash();
+  renderDesktopIcons();
+  updateClock();
+  setInterval(updateClock,1000);
+  var g=$('#grub-screen');if(g)g.style.display='flex';
+  setTimeout(function(){if(g)g.style.display='none';startSystemdBoot()},1800);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initUbuntu);
+else initUbuntu();
+</script>
+</body>
+</html>

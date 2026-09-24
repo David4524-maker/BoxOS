@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BoxOS 11 - Windows 11 Edition (Ultra Destructible)</title>
+<title>BoxOS 11</title>
 <style>
   :root{
     --accent:#0078d4;--accent-hover:#106ebe;--win-bg:#202020;--win-bg-2:#2b2b2b;
@@ -54,6 +54,8 @@
   @keyframes memFlicker{0%,100%{opacity:1;}50%{opacity:.85;}}
   body.overheat #desktop{animation:heatShimmer 1.5s infinite;}
   @keyframes heatShimmer{0%,100%{filter:brightness(1) saturate(1);}50%{filter:brightness(1.15) saturate(1.4) hue-rotate(-10deg);}}
+  body.c-destroyed #desktop{background:#000 !important;}
+  body.c-destroyed .desktop-icon{opacity:.25;filter:grayscale(1);pointer-events:none;}
 
   .desktop-icon{position:absolute;width:90px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:12px;text-shadow:0 1px 3px rgba(0,0,0,.85);cursor:default;border-radius:4px;padding:6px 4px;text-align:center;border:1px solid transparent;touch-action:none;transition:background .12s;}
   .desktop-icon:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.25);}
@@ -243,6 +245,12 @@
 
   #black-screen{position:fixed;inset:0 0 48px 0;background:#000;z-index:199999;display:none;color:#888;font-family:'Segoe UI',sans-serif;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:30px;font-size:13px;}
   #black-screen.open{display:flex;}
+
+  /* Centro de destrucción */
+  .dc-cat-title{margin:14px 0 6px;font-size:12.5px;font-weight:700;color:var(--accent);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--win-border);padding-bottom:4px;}
+  .dc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:8px;}
+  .dc-btn{background:var(--win-bg);color:var(--text);border:1px solid var(--win-border);padding:9px 10px;border-radius:6px;text-align:left;font-size:11.5px;transition:background .12s,transform .12s,border-color .12s;cursor:pointer;}
+  .dc-btn:hover{background:var(--danger);border-color:var(--danger);color:#fff;transform:translateY(-1px);}
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -397,62 +405,39 @@
 </div>
 
 <script>
-/* =====================================================================
-   PROTECCIÓN CONTRA PANTALLA DE ARRANQUE ATASCADA
-   - Si hay un error de JS, oculta la pantalla de arranque.
-   - Si tras 3s sigue visible, la oculta a la fuerza.
-   - Se ejecuta ANTES de DOMContentLoaded.
-   ===================================================================== */
-window.addEventListener('error', function(ev){
-  try{
-    var bs = document.getElementById('boot-screen');
-    if(bs && getComputedStyle(bs).display !== 'none'){
-      bs.style.setProperty('display','none','important');
-    }
-  }catch(e){}
+/* Protección anti-pantalla-atascada */
+window.addEventListener('error', function(){
+  try{ var bs=document.getElementById('boot-screen'); if(bs&&getComputedStyle(bs).display!=='none') bs.style.setProperty('display','none','important'); }catch(e){}
 });
-(function forceBootHide(){
-  var tries = 0;
-  var iv = setInterval(function(){
-    tries++;
-    try{
-      var bs = document.getElementById('boot-screen');
-      if(!bs){ clearInterval(iv); return; }
-      var visible = getComputedStyle(bs).display !== 'none';
-      if(!visible){ clearInterval(iv); return; }
-      if(tries >= 15){ bs.style.setProperty('display','none','important'); clearInterval(iv); }
-    }catch(e){ clearInterval(iv); }
-  }, 200);
-})();
+(function(){var t=0,iv=setInterval(function(){t++;try{var bs=document.getElementById('boot-screen');if(!bs){clearInterval(iv);return;}if(getComputedStyle(bs).display==='none'){clearInterval(iv);return;}if(t>=15){bs.style.setProperty('display','none','important');clearInterval(iv);}}catch(e){clearInterval(iv);}},200);})();
 
 /* =====================================================================
-   BoxOS 11 — Núcleo del sistema · +70 formas de destrucción
+   BoxOS 11 — Ultra Destructible v2 (+70 formas)
    ===================================================================== */
-var $  = function(s, r){ return (r||document).querySelector(s); };
-var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
-var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
-var fmtSize = function(n){ return n < 1024 ? n + ' B' : (n/1024).toFixed(1) + ' KB'; };
-var fmtDate = function(t){ return new Date(t).toLocaleString('es-ES', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+var $  = function(s,r){ return (r||document).querySelector(s); };
+var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+var esc = function(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); };
+var fmtSize = function(n){ return n<1024?n+' B':(n/1024).toFixed(1)+' KB'; };
+var fmtDate = function(t){ return new Date(t).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); };
 var rnd = function(a,b){ return Math.floor(Math.random()*(b-a+1))+a; };
 
-var audioCtx = null;
-function ac(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return audioCtx; }
-function beep(freq, dur, type, vol){
-  type = type || 'square'; vol = vol || 0.05;
+var audioCtx=null;
+function ac(){ if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}} return audioCtx; }
+function beep(freq,dur,type,vol){
+  type=type||'square'; vol=vol||0.05;
   if(!settings.sound) return;
-  try{
-    var ctx = ac(); if(!ctx) return;
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime);
-    g.gain.setValueAtTime(vol, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+  try{ var ctx=ac(); if(!ctx) return;
+    var o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,ctx.currentTime);
+    g.gain.setValueAtTime(vol,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+dur);
     o.connect(g); g.connect(ctx.destination);
-    o.start(); o.stop(ctx.currentTime + dur);
+    o.start(); o.stop(ctx.currentTime+dur);
   }catch(e){}
 }
 function playAudio(type){
   if(!settings.sound) return;
-  var notes = {
+  var notes={
     error:[[180,.18,'sawtooth',.06],[90,.25,'sawtooth',.06]],
     bsod:[[120,.9,'square',.05]],
     beep:[[440,.08,'square',.05]],
@@ -463,8 +448,8 @@ function playAudio(type){
     success:[[523,.12,'sine',.05],[784,.15,'sine',.05]],
     warn:[[330,.15,'square',.04],[330,.15,'square',.04]]
   };
-  var seq = notes[type]; if(!seq) return;
-  seq.forEach(function(n, i){ setTimeout(function(){ beep(n[0], n[1], n[2], n[3]); }, i*130); });
+  var seq=notes[type]; if(!seq) return;
+  seq.forEach(function(n,i){ setTimeout(function(){ beep(n[0],n[1],n[2],n[3]); },i*130); });
 }
 
 var settings = { sound:true, volume:70, theme:'dark', accent:'#0078d4', wallpaper:'wp-1', username:'Usuario', password:'box', icons:{}, iconLabels:{} };
@@ -478,13 +463,137 @@ var damage = {
   updateBroken:false, netAdapterDisabled:false, dotnetRemoved:false, executionPolicyOpen:false
 };
 
-var vfs = null, recycleBin = [];
-var isCDestroyed = false, safeMode = false;
-var ransomwareActive = false, ransomwareTimer = null;
-var forkBombInterval = null, minerInterval = null, keyloggerInterval = null;
-var systemHealth = 100;
+var vfs=null, recycleBin=[];
+var isCDestroyed=false, safeMode=false;
+var _blockDialogOpen=false;
+var ransomwareActive=false, ransomwareTimer=null;
+var forkBombInterval=null, minerInterval=null, keyloggerInterval=null;
+var systemHealth=100;
 
-/* ============ ARCHIVOS CRÍTICOS ============ */
+/* ============================================================
+   ⛔ BLOQUEO MAESTRO: C:\ destruido ⇒ NINGÚN programa funciona
+   hasta que se recargue la página (F5)
+   ============================================================ */
+function cBlocked(){
+  if(!isCDestroyed) return false;
+  playAudio('error');
+  if(_blockDialogOpen){
+    toast('Sistema inoperable','Recarga la página (F5) para restaurar.','error',3000);
+    return true;
+  }
+  _blockDialogOpen = true;
+  showDialog({
+    title:'Sistema inoperable',
+    icon:'☠️',
+    width:520,
+    message:'El disco C:\\ ha sido destruido por completo.\n\nTodos los programas del sistema están inaccesibles de forma permanente.\n\nRecarga la página (F5) para reinstalar BoxOS desde cero.',
+    buttons:[
+      {label:'Recargar ahora', primary:true, onClick:function(){ _blockDialogOpen=false; location.reload(); }},
+      {label:'Cerrar', onClick:function(){ _blockDialogOpen=false; }}
+    ]
+  });
+  return true;
+}
+function killSystem(){
+  if(isCDestroyed) return;
+  isCDestroyed = true;
+  damage.diskWiped = true;
+  try{ closeAllWindows(); }catch(e){}
+  try{ var sm=$('#start-menu'); if(sm) sm.classList.remove('open'); }catch(e){}
+  try{ document.body.classList.add('c-destroyed'); }catch(e){}
+  // Vaciar el VFS para que el explorador no muestre nada
+  setTimeout(function(){
+    try{ vfs = { 'C:' : mkdir({}) }; }catch(e){}
+  }, 100);
+  toast('DISCO DESTRUIDO', 'El volumen C:\\ ya no es accesible. Todos los programas han dejado de funcionar.', 'error', 6000);
+}
+
+/* ============================================================
+   ☠️ 70 NUEVAS FORMAS DE DESTRUIR EL SISTEMA
+   ============================================================ */
+var DESTRUCTIONS_70 = [
+  /* 🥾 Arranque y kernel (15) */
+  {cat:'🥾 Arranque y kernel', n:'Corromper MBR',              i:'💾', f:function(){applyEffect('no-os');}},
+  {cat:'🥾 Arranque y kernel', n:'Sobrescribir sector arranque',i:'💿', f:function(){applyEffect('no-os');}},
+  {cat:'🥾 Arranque y kernel', n:'Borrar winload.exe',         i:'📦', f:function(){deleteEntry('C:/Windows/System32/winload.exe');}},
+  {cat:'🥾 Arranque y kernel', n:'Eliminar entradas BCD',      i:'🥾', f:function(){applyEffect('no-os');}},
+  {cat:'🥾 Arranque y kernel', n:'Fallar bootloader',          i:'🔗', f:function(){applyEffect('no-os');}},
+  {cat:'🥾 Arranque y kernel', n:'Kernel panic manual',        i:'💥', f:function(){triggerBSOD('MANUAL_KERNEL_PANIC');}},
+  {cat:'🥾 Arranque y kernel', n:'Kill System Process',        i:'💀', f:function(){triggerBSOD('CRITICAL_PROCESS_DIED');}},
+  {cat:'🥾 Arranque y kernel', n:'Corromper SAM',              i:'🗝️', f:function(){deleteEntry('C:/Windows/System32/config/SAM');}},
+  {cat:'🥾 Arranque y kernel', n:'Eliminar bootmgr.efi',       i:'🥾', f:function(){deleteEntry('C:/Windows/System32/bootmgr.efi');}},
+  {cat:'🥾 Arranque y kernel', n:'UEFI Secure Boot roto',      i:'🔒', f:function(){applyEffect('no-os');}},
+  {cat:'🥾 Arranque y kernel', n:'Eliminar Recovery WinRE',    i:'💽', f:function(){deleteEntry('C:/Windows/System32/winre.wim');}},
+  {cat:'🥾 Arranque y kernel', n:'Corromper HKLM\\SYSTEM',     i:'🗝️', f:function(){applyEffect('registry-corrupt');}},
+  {cat:'🥾 Arranque y kernel', n:'Firmware BIOS corrupto',     i:'⚙️', f:function(){triggerBSOD('BIOS_FAILURE');}},
+  {cat:'🥾 Arranque y kernel', n:'Fallo carga del kernel',     i:'💥', f:function(){triggerBSOD('KERNEL_SECURITY_CHECK_FAILURE');}},
+  {cat:'🥾 Arranque y kernel', n:'Bucle infinito de arranque', i:'🔄', f:function(){applyEffect('no-os');}},
+
+  /* 🔧 Hardware y drivers (15) */
+  {cat:'🔧 Hardware y drivers', n:'CPU overclock extremo',     i:'🔥', f:function(){applyEffect('overheat');setTimeout(function(){triggerBSOD('CPU_OVERHEAT');},2000);}},
+  {cat:'🔧 Hardware y drivers', n:'RAM overclock fallido',     i:'🧠', f:function(){triggerBSOD('MEMORY_MANAGEMENT');}},
+  {cat:'🔧 Hardware y drivers', n:'GPU TDR forzado',           i:'🖥️', f:function(){applyEffect('no-gpu');}},
+  {cat:'🔧 Hardware y drivers', n:'Eliminar DriverStore',      i:'📦', f:function(){deleteEntry('C:/Windows/System32/DriverStore');}},
+  {cat:'🔧 Hardware y drivers', n:'Deshabilitar USB',          i:'🔌', f:function(){toast('USB','Todos los puertos USB han sido deshabilitados.','error',3000);}},
+  {cat:'🔧 Hardware y drivers', n:'Deshabilitar PS/2',         i:'⌨️', f:function(){toast('PS/2','Teclado y ratón PS/2 deshabilitados.','error',3000);}},
+  {cat:'🔧 Hardware y drivers', n:'Deshabilitar Bluetooth',    i:'📶', f:function(){toast('Bluetooth','Adaptador apagado.','warn');}},
+  {cat:'🔧 Hardware y drivers', n:'Deshabilitar WiFi',         i:'📡', f:function(){applyEffect('no-network');}},
+  {cat:'🔧 Hardware y drivers', n:'Deshabilitar audio',        i:'🔇', f:function(){applyEffect('no-audio');}},
+  {cat:'🔧 Hardware y drivers', n:'Deshabilitar red',          i:'🌐', f:function(){applyEffect('no-network');}},
+  {cat:'🔧 Hardware y drivers', n:'Bloquear firmware BIOS',    i:'🔒', f:function(){triggerBSOD('BIOS_LOCKED');}},
+  {cat:'🔧 Hardware y drivers', n:'TPM corrupto',              i:'🔐', f:function(){triggerBSOD('TPM_DEVICE_FAILURE');}},
+  {cat:'🔧 Hardware y drivers', n:'Memoria llena al 100%',     i:'🧠', f:function(){damage.lowMem=true;applyDamageVisuals();}},
+  {cat:'🔧 Hardware y drivers', n:'Corromper microcódigo CPU', i:'⚙️', f:function(){triggerBSOD('MACHINE_CHECK_EXCEPTION');}},
+  {cat:'🔧 Hardware y drivers', n:'Fallar todos los drivers',  i:'💥', f:function(){triggerBSOD('DRIVER_IRQL_NOT_LESS_OR_EQUAL');}},
+
+  /* 🔒 Red y seguridad (15) */
+  {cat:'🔒 Red y seguridad', n:'Deshabilitar firewall',        i:'🔥', f:function(){toast('Firewall','Deshabilitado.','warn');}},
+  {cat:'🔒 Red y seguridad', n:'Borrar todas las reglas firewall',i:'📋', f:function(){toast('Firewall','Todas las reglas eliminadas.','warn');}},
+  {cat:'🔒 Red y seguridad', n:'Desinstalar antivirus',        i:'🛡️', f:function(){applyEffect('defender-dead');}},
+  {cat:'🔒 Red y seguridad', n:'Deshabilitar Defender',        i:'🛡️', f:function(){applyEffect('defender-dead');}},
+  {cat:'🔒 Red y seguridad', n:'BitLocker sin clave',          i:'🔐', f:function(){killSystem();}},
+  {cat:'🔒 Red y seguridad', n:'Romper Windows Hello',         i:'👤', f:function(){toast('Hello','Biometría rota.','error');}},
+  {cat:'🔒 Red y seguridad', n:'Borrar todas las credenciales',i:'🔑', f:function(){toast('Credenciales','Todas eliminadas.','error');}},
+  {cat:'🔒 Red y seguridad', n:'Bloquear SAM',                 i:'🗝️', f:function(){triggerBSOD('SECURITY_SYSTEM_FAILURE');}},
+  {cat:'🔒 Red y seguridad', n:'Tumbar AD',                    i:'🌐', f:function(){applyEffect('no-network');}},
+  {cat:'🔒 Red y seguridad', n:'Borrar certificado raíz',      i:'📜', f:function(){toast('Certificados','Todos los certificados eliminados.','error',3000);}},
+  {cat:'🔒 Red y seguridad', n:'DNS blackhole',                i:'🕳️', f:function(){applyEffect('no-network');}},
+  {cat:'🔒 Red y seguridad', n:'Inundar red (flood)',          i:'🌊', f:function(){applyEffect('no-network');}},
+  {cat:'🔒 Red y seguridad', n:'Cerrar todos los puertos',     i:'🚫', f:function(){applyEffect('no-network');}},
+  {cat:'🔒 Red y seguridad', n:'Wireshark packet flood',       i:'🦈', f:function(){applyEffect('no-network');}},
+  {cat:'🔒 Red y seguridad', n:'Hackear VPN',                  i:'🔓', f:function(){applyEffect('no-network');}},
+
+  /* 💾 Disco y sistema de archivos (15) */
+  {cat:'💾 Disco y FS', n:'Formatear C:',                      i:'💣', f:function(){killSystem();}},
+  {cat:'💾 Disco y FS', n:'Corromper tabla NTFS',              i:'📁', f:function(){triggerBSOD('NTFS_FILE_SYSTEM');}},
+  {cat:'💾 Disco y FS', n:'Marcar volumen sucio',              i:'🚩', f:function(){triggerBSOD('NTFS_FILE_SYSTEM');}},
+  {cat:'💾 Disco y FS', n:'Comprimir todo el sistema',         i:'🗜️', f:function(){damage.fontCorrupt=true;applyDamageVisuals();}},
+  {cat:'💾 Disco y FS', n:'Reducir disco a 0 bytes',           i:'📉', f:function(){killSystem();}},
+  {cat:'💾 Disco y FS', n:'Eliminar pagefile.sys',             i:'📄', f:function(){deleteEntry('C:/pagefile.sys');}},
+  {cat:'💾 Disco y FS', n:'Eliminar hiberfil.sys',             i:'💤', f:function(){deleteEntry('C:/hiberfil.sys');}},
+  {cat:'💾 Disco y FS', n:'Borrar todos los logs',             i:'📋', f:function(){damage.logsDead=true;applyDamageVisuals();}},
+  {cat:'💾 Disco y FS', n:'Corromper índice de búsqueda',      i:'🔍', f:function(){toast('Búsqueda','Índice corrupto.','warn');}},
+  {cat:'💾 Disco y FS', n:'Fragmentación extrema',             i:'🧩', f:function(){triggerBSOD('DISK_FRAGMENTATION_FAILURE');}},
+  {cat:'💾 Disco y FS', n:'Convertir a disco dinámico',        i:'💽', f:function(){triggerBSOD('DYNAMIC_DISK_FAILURE');}},
+  {cat:'💾 Disco y FS', n:'Quitar letra de unidad C:',         i:'🔠', f:function(){killSystem();}},
+  {cat:'💾 Disco y FS', n:'Montar volumen vacío',              i:'📂', f:function(){killSystem();}},
+  {cat:'💾 Disco y FS', n:'Sobrescribir con ceros',            i:'0️⃣', f:function(){killSystem();}},
+  {cat:'💾 Disco y FS', n:'Cifrar disco sin clave',            i:'🔐', f:function(){killSystem();}},
+
+  /* 🌪️ Caos aleatorio (10) */
+  {cat:'🌪️ Caos aleatorio', n:'Corromper fuentes',             i:'🔤', f:function(){applyEffect('corrupt-text');}},
+  {cat:'🌪️ Caos aleatorio', n:'Locale corrupto',               i:'🌐', f:function(){applyEffect('corrupt-text');}},
+  {cat:'🌪️ Caos aleatorio', n:'Desincronizar reloj',           i:'⏰', f:function(){toast('Reloj','Hora desincronizada.','warn');}},
+  {cat:'🌪️ Caos aleatorio', n:'Codificación rota',             i:'🔡', f:function(){applyEffect('corrupt-text');}},
+  {cat:'🌪️ Caos aleatorio', n:'Teclado invertido',             i:'⌨️', f:function(){toast('Teclado','Teclas invertidas.','warn');}},
+  {cat:'🌪️ Caos aleatorio', n:'Ratón invertido',               i:'🖱️', f:function(){toast('Ratón','Ejes invertidos.','warn');}},
+  {cat:'🌪️ Caos aleatorio', n:'Pantalla invertida',            i:'🖥️', f:function(){document.documentElement.style.filter='invert(1) hue-rotate(180deg)';setTimeout(function(){document.documentElement.style.filter='';},5000);}},
+  {cat:'🌪️ Caos aleatorio', n:'Alto contraste forzado',        i:'🎨', f:function(){damage.gpuFailed=true;applyDamageVisuals();}},
+  {cat:'🌪️ Caos aleatorio', n:'Narrador constante',            i:'🔊', f:function(){var iv=setInterval(function(){toast('Narrador','Leyendo pantalla...','info',1500);},3000);setTimeout(function(){clearInterval(iv);},15000);}},
+  {cat:'🌪️ Caos aleatorio', n:'Bucle de reinicio infinito',    i:'🔄', f:function(){applyEffect('no-os');}}
+];
+
+/* ARCHIVOS CRÍTICOS */
 var CRITICAL_FILES = {
   'C:/Windows/System32/ntoskrnl.exe':   { bsod:'KERNEL_SECURITY_CHECK_FAILURE' },
   'C:/Windows/System32/hal.dll':        { bsod:'HAL_INITIALIZATION_FAILED' },
@@ -546,19 +655,21 @@ var CRITICAL_FILES = {
   'C:/hiberfil.sys':                       { warning:true }
 };
 
+/* Rutas protegidas: si tienen killsSystem:true ⇒ sistema destruido permanentemente */
 var PROTECTED_PATHS = {
-  'C:/Windows':              { bsod:'CRITICAL_PROCESS_DIED' },
-  'C:/Windows/System32':     { bsod:'CRITICAL_PROCESS_DIED' },
+  'C:':                        { bsod:'CRITICAL_PROCESS_DIED', killsSystem:true },
+  'C:/Windows':                { bsod:'CRITICAL_PROCESS_DIED', killsSystem:true },
+  'C:/Windows/System32':       { bsod:'CRITICAL_PROCESS_DIED', killsSystem:true },
   'C:/Windows/System32/drivers':{ bsod:'DRIVER_IRQL_NOT_LESS_OR_EQUAL' },
-  'C:/Windows/System32/config': { bsod:'CRITICAL_PROCESS_DIED' },
-  'C:/Windows/Fonts':        { effect:'corrupt-text' },
-  'C:/Program Files':        { warning:true },
-  'C:/Program Files (x86)':  { warning:true },
+  'C:/Windows/System32/config': { bsod:'CRITICAL_PROCESS_DIED', killsSystem:true },
+  'C:/Windows/Fonts':          { effect:'corrupt-text' },
+  'C:/Program Files':          { warning:true },
+  'C:/Program Files (x86)':    { warning:true },
   'C:/Program Files/Microsoft/Windows Defender': { warning:true, effect:'defender-dead' },
-  'C:/Users/Usuario':        { inUse:true },
-  'C:/Users':                { inUse:true },
-  'C:/Users/Usuario/Desktop':{ effect:'desktop-gone' },
-  'C:/Recovery':             { warning:true, effect:'recovery-dead' }
+  'C:/Users/Usuario':          { inUse:true },
+  'C:/Users':                  { inUse:true },
+  'C:/Users/Usuario/Desktop':  { effect:'desktop-gone' },
+  'C:/Recovery':               { warning:true, effect:'recovery-dead' }
 };
 
 var APPS = {
@@ -585,7 +696,8 @@ var APPS = {
   diskpart:{name:'DiskPart',icon:'💥',run:function(){openDiskpart();}},
   features:{name:'Caract. de Windows',icon:'🧩',run:function(){openFeatures();}},
   userdel:{name:'Administración usuarios',icon:'👥',run:function(){openUserManager();}},
-  wiper:{name:'Wiper',icon:'🧹',run:function(){openWiper();}}
+  wiper:{name:'Wiper',icon:'🧹',run:function(){openWiper();}},
+  destroycenter:{name:'Centro de Destrucción',icon:'☠️',run:function(){openDestructionCenter();}}
 };
 
 function mkfile(content){ return {type:'file', content:String(content||''), modified:Date.now(), size:String(content||'').length}; }
@@ -641,7 +753,7 @@ function createVFS(){
     "Program Files (x86)": mkdir({}),
     "Users": mkdir({
       "Usuario": mkdir({
-        "Desktop": mkdir({"Bienvenido.txt":mkfile('Bienvenido a BoxOS 11\n\nPrueba a borrar C:\\Windows\\System32 ;)')}),
+        "Desktop": mkdir({"Bienvenido.txt":mkfile('Bienvenido a BoxOS 11\n\nPrueba a borrar C:\\Windows\\System32 ;)\n\nNuevo: mira el Centro de Destrucción ☠️')}),
         "Documents": mkdir({"informe.docx":mkfile('...'),"presupuesto.xlsx":mkfile('...')}),
         "Downloads": mkdir({"setup.exe":mkfile('MZ')}),
         "Pictures": mkdir({"wallpaper.jpg":mkfile('jpg')}),
@@ -657,12 +769,13 @@ function createVFS(){
     "hiberfil.sys": mkfile('Hibernate'),
     "bootmgr": mkfile('BootMgr'),
     "BOOTNXT": mkfile('BootNXT'),
-    "README.txt": mkfile('BoxOS 11 · Ultra Destructible · 70 nuevas formas')
+    "README.txt": mkfile('BoxOS 11 · Ultra Destructible v2 · +70 formas')
   })};
 }
 
 function splitPath(p){ return String(p).split('/').filter(Boolean); }
 function getNode(path){
+  if(isCDestroyed) return null;
   var parts = splitPath(path); if(!parts.length) return null;
   var node = vfs[parts[0]]; if(!node) return null;
   for(var i=1;i<parts.length;i++){
@@ -672,38 +785,26 @@ function getNode(path){
   return node;
 }
 function getParentPath(path){ var p = splitPath(path); p.pop(); return p.join('/') || 'C:'; }
-function joinPath(a, b){ return a.replace(/\/$/,'') + '/' + b; }
+function joinPath(a,b){ return a.replace(/\/$/,'') + '/' + b; }
 
-function saveState(){ /* no-op: al recargar todo vuelve a normal */ }
-function loadState(){ try{ localStorage.removeItem('boxos11'); }catch(e){} return false; }
+function saveState(){}
+function loadState(){ try{localStorage.removeItem('boxos11');}catch(e){} return false; }
 function factoryReset(){
   try{ localStorage.removeItem('boxos11'); }catch(e){}
-  vfs = createVFS(); recycleBin = [];
-  isCDestroyed=false; safeMode=false; ransomwareActive=false; systemHealth=100;
-  damage = { gpuFailed:false,audioFailed:false,networkFailed:false,fontCorrupt:false,explorerDead:false,
-    bootloaderGone:false,desktopGone:false,defenderDead:false,recoveryDead:false,printDead:false,
-    wmiDead:false,servicesDead:false,tasksDead:false,eventsDead:false,logsDead:false,lowMem:false,
-    overheat:false,diskWiped:false,registryCorrupt:false,groupPolicyLock:false,adminDeleted:false,
-    updateBroken:false,netAdapterDisabled:false,dotnetRemoved:false,executionPolicyOpen:false };
-  clearInterval(ransomwareTimer); clearInterval(forkBombInterval);
-  clearInterval(minerInterval); clearInterval(keyloggerInterval);
-  settings.icons={}; settings.iconLabels={};
-  document.body.className = document.body.className.replace(/no-[a-z-]+|corrupt-text|low-mem|overheat/g,'').trim();
-  $('#black-screen').classList.remove('open');
-  toast('Sistema restablecido', 'BoxOS 11 vuelve a su estado de fábrica.', 'ok');
-  setTimeout(function(){ location.reload(); }, 900);
+  try{ localStorage.removeItem('boxos11_v2'); }catch(e){}
+  location.reload();
 }
 
 var notifHistory = [];
-function toast(title, msg, type, timeout){
-  msg = msg || ''; type = type || 'info'; timeout = timeout || 4500;
+function toast(title,msg,type,timeout){
+  msg=msg||''; type=type||'info'; timeout=timeout||4500;
   var box = $('#notifications'); if(!box) return;
   var el = document.createElement('div');
-  el.className = 'toast ' + (type==='error'?'err':type==='ok'?'ok':type==='warn'?'warn':'');
-  el.innerHTML = '<div class="toast-title">'+esc(title)+'</div>' + (msg?'<div class="toast-msg">'+esc(msg)+'</div>':'');
+  el.className='toast '+(type==='error'?'err':type==='ok'?'ok':type==='warn'?'warn':'');
+  el.innerHTML='<div class="toast-title">'+esc(title)+'</div>'+(msg?'<div class="toast-msg">'+esc(msg)+'</div>':'');
   box.appendChild(el);
-  setTimeout(function(){ el.classList.add('out'); setTimeout(function(){ el.remove(); }, 320); }, timeout);
-  notifHistory.unshift({title:title, msg:msg, time:Date.now(), type:type});
+  setTimeout(function(){ el.classList.add('out'); setTimeout(function(){ el.remove(); },320); },timeout);
+  notifHistory.unshift({title:title,msg:msg,time:Date.now(),type:type});
   if(notifHistory.length>30) notifHistory.pop();
   renderNotifHistory();
   playAudio(type==='error'?'warn':'notify');
@@ -750,7 +851,7 @@ function showPrompt(opts){
   return id;
 }
 
-function showContextMenu(x, y, items){
+function showContextMenu(x,y,items){
   var m = $('#ctx-menu');
   m.innerHTML = items.map(function(it,i){ return it==='-'?'<div class="ctx-sep"></div>':'<div class="ctx-item" data-i="'+i+'"><span>'+it.icon+'</span><span>'+esc(it.label)+'</span></div>'; }).join('');
   m.style.display='block';
@@ -770,7 +871,7 @@ document.addEventListener('contextmenu', function(e){
   if(icon){
     var ic = DESKTOP_ICONS.find(function(i){ return i.id===icon.dataset.id; });
     if(!ic) return;
-    showContextMenu(e.clientX, e.clientY, [
+    showContextMenu(e.clientX,e.clientY,[
       {label:'Abrir', icon:'📂', action:function(){ ic.run(); }},
       {label:'Renombrar', icon:'✏️', action:function(){ renameDesktopIcon(ic); }},
       '-',
@@ -780,7 +881,7 @@ document.addEventListener('contextmenu', function(e){
   }
   var win = e.target.closest('.window');
   if(win){
-    showContextMenu(e.clientX, e.clientY, [
+    showContextMenu(e.clientX,e.clientY,[
       {label:'Minimizar', icon:'➖', action:function(){ minimizeWindow(win.id); }},
       {label:'Maximizar', icon:'🔲', action:function(){ toggleMaximize(win.id); }},
       '-',
@@ -788,7 +889,7 @@ document.addEventListener('contextmenu', function(e){
     ]); return;
   }
   if(e.target.closest('#desktop')){
-    showContextMenu(e.clientX, e.clientY, [
+    showContextMenu(e.clientX,e.clientY,[
       {label:'Actualizar', icon:'🔄', action:function(){ renderDesktopIcons(); toast('Escritorio actualizado','','ok',1500); }},
       '-',
       {label:'Nueva carpeta', icon:'📁', action:function(){ createDesktopFolder(); }},
@@ -801,12 +902,14 @@ document.addEventListener('contextmenu', function(e){
 });
 
 function createDesktopFolder(){
+  if(isCDestroyed){ cBlocked(); return; }
   var n = getNode('C:/Users/Usuario/Desktop'); if(!n) return;
   var name='Nueva carpeta', i=1;
   while(n.content[name]) name='Nueva carpeta ('+(++i)+')';
   n.content[name]=mkdir({}); toast('Carpeta creada', name, 'ok');
 }
 function createDesktopFile(){
+  if(isCDestroyed){ cBlocked(); return; }
   var n = getNode('C:/Users/Usuario/Desktop'); if(!n) return;
   var name='Nuevo documento.txt', i=1;
   while(n.content[name]) name='Nuevo documento ('+(++i)+').txt';
@@ -816,6 +919,7 @@ function createDesktopFile(){
 var DESKTOP_ICONS = [
   {id:'pc',label:'Este equipo',icon:'💻',run:function(){ openExplorer('C:'); }},
   {id:'recycle',label:'Papelera',icon:'🗑️',run:function(){ openRecycleBin(); }},
+  {id:'destroycenter',label:'Centro Destrucción',icon:'☠️',run:function(){ openDestructionCenter(); }},
   {id:'edge',label:'Microsoft Edge',icon:'🌐',run:function(){ openBrowser(); }},
   {id:'store',label:'Microsoft Store',icon:'🛍️',run:function(){ openBoxStore(); }},
   {id:'cmd',label:'Símbolo del sistema',icon:'⬛',run:function(){ openCMD(); }},
@@ -843,7 +947,7 @@ function defaultIconPos(i){ var col=Math.floor(i/7), row=i%7; return {x:10+col*1
 function renderDesktopIcons(){
   var d = $('#desktop'); if(!d) return;
   $$('.desktop-icon', d).forEach(function(e){ e.remove(); });
-  DESKTOP_ICONS.forEach(function(ic, i){
+  DESKTOP_ICONS.forEach(function(ic,i){
     var pos = settings.icons[ic.id] || defaultIconPos(i);
     var el = document.createElement('div');
     el.className='desktop-icon';
@@ -862,7 +966,7 @@ function renderDesktopIcons(){
     d.appendChild(el);
   });
 }
-function startIconDrag(e, el, ic){
+function startIconDrag(e,el,ic){
   if(e.button!==0) return;
   var sx=e.clientX, sy=e.clientY;
   var ox=parseInt(el.style.left,10), oy=parseInt(el.style.top,10);
@@ -894,8 +998,14 @@ var zTop=100, winCounter=0, activeWin=null;
 var openWindows = {}, explorerStates = {};
 
 function createWindow(opts){
-  var o = {};
-  for(var k in opts) o[k]=opts[k];
+  // ⛔ Bloquear todos los programas si el disco C fue destruido
+  // (excepto los diálogos del sistema, para poder ofrecer "Recargar")
+  var appId = opts && opts.appId;
+  if(isCDestroyed && appId && appId !== 'dialog'){
+    cBlocked();
+    return 'win-blocked';
+  }
+  var o = {}; for(var k in opts) o[k]=opts[k];
   if(!o.title) o.title='Ventana'; if(!o.icon) o.icon='🗔'; if(!o.body) o.body='';
   if(!o.width) o.width=640; if(!o.height) o.height=420;
   if(o.resizable===undefined) o.resizable=true; if(o.autoHeight===undefined) o.autoHeight=false;
@@ -983,7 +1093,7 @@ function addTaskButton(id){
 }
 function focusWindow(id){
   var w = openWindows[id]; if(!w) return;
-  if(w.min) restoreWindow(id, true);
+  if(w.min) restoreWindow(id,true);
   w.el.style.zIndex = ++zTop; activeWin = id;
   updateTaskbar();
 }
@@ -993,7 +1103,7 @@ function minimizeWindow(id){
   if(activeWin===id) activeWin=null;
   updateTaskbar();
 }
-function restoreWindow(id, silent){
+function restoreWindow(id,silent){
   var w = openWindows[id]; if(!w) return;
   w.min=false; w.el.style.display='flex';
   if(!silent){ w.el.style.zIndex=++zTop; activeWin=id; }
@@ -1026,16 +1136,17 @@ function updateTaskbar(){
   });
 }
 function showDesktop(){
-  var anyVisible = false;
+  var anyVisible=false;
   Object.keys(openWindows).forEach(function(id){ if(!openWindows[id].min) anyVisible=true; });
   Object.keys(openWindows).forEach(function(id){ if(anyVisible) minimizeWindow(id); else restoreWindow(id,true); });
 }
 function closeAllWindows(){ Object.keys(openWindows).forEach(function(id){ closeWindow(id); }); }
 
 function toggleStart(){
+  if(isCDestroyed){ cBlocked(); return; }
   var m = $('#start-menu');
   var open = m.classList.toggle('open');
-  if(open){ renderStartList(); $('#start-search-input').value=''; setTimeout(function(){ $('#start-search-input').focus(); }, 60); }
+  if(open){ renderStartList(); $('#start-search-input').value=''; setTimeout(function(){ $('#start-search-input').focus(); },60); }
 }
 function closeStart(){ $('#start-menu').classList.remove('open'); }
 function toggleAllApps(){ renderStartList(''); }
@@ -1061,8 +1172,7 @@ function updateClock(){
   if(t) t.textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   if(dt) dt.textContent = d.toLocaleDateString([], {day:'2-digit', month:'2-digit', year:'numeric'});
   var ft = $('#fly-time');
-  if(ft){
-    ft.textContent = d.toLocaleTimeString();
+  if(ft){ ft.textContent = d.toLocaleTimeString();
     var fd = $('#fly-date'); if(fd) fd.textContent = d.toLocaleDateString([], {weekday:'long', day:'numeric', month:'long', year:'numeric'});
   }
 }
@@ -1104,6 +1214,7 @@ function applyDamageVisuals(){
   document.body.classList.toggle('no-desktop-icons', !!damage.desktopGone);
   document.body.classList.toggle('low-mem', !!damage.lowMem);
   document.body.classList.toggle('overheat', !!damage.overheat);
+  document.body.classList.toggle('c-destroyed', !!isCDestroyed);
   var bs = $('#black-screen'); if(bs) bs.classList.toggle('open', !!damage.explorerDead);
 }
 function setVolume(v){
@@ -1118,16 +1229,62 @@ function toggleSound(){
   toast('Sonido', settings.sound?'Activado':'Silenciado','info',1600);
 }
 function cycleWallpaper(){
-  var list = ['wp-1','wp-2','wp-3','wp-4','wp-5','wp-6','wp-7','wp-8'];
-  var i = list.indexOf(settings.wallpaper);
+  var list=['wp-1','wp-2','wp-3','wp-4','wp-5','wp-6','wp-7','wp-8'];
+  var i=list.indexOf(settings.wallpaper);
   settings.wallpaper = list[(i+1)%list.length];
   applySettings(); toast('Fondo aplicado', settings.wallpaper,'ok',1800);
 }
 
+/* ============ CENTRO DE DESTRUCCIÓN (70 nuevas) ============ */
+function openDestructionCenter(){
+  if(isCDestroyed){ cBlocked(); return; }
+  var cats = {};
+  DESTRUCTIONS_70.forEach(function(d,i){ (cats[d.cat]=cats[d.cat]||[]).push({d:d,idx:i}); });
+  var html = '<div style="padding:6px 4px;">'+
+    '<div style="font-size:13px;color:var(--danger);font-weight:700;margin-bottom:4px;">☠️ '+DESTRUCTIONS_70.length+' formas adicionales de destruir el sistema</div>'+
+    '<div style="font-size:11.5px;color:var(--text-dim);margin-bottom:8px;">Cada botón ejecuta una acción catastrófica distinta. Úsalo bajo tu propio riesgo.</div>';
+  Object.keys(cats).forEach(function(cat){
+    html += '<div class="dc-cat-title">'+esc(cat)+' ('+cats[cat].length+')</div>';
+    html += '<div class="dc-grid">';
+    cats[cat].forEach(function(item){
+      html += '<button class="dc-btn" data-d70="'+item.idx+'">'+item.d.i+' '+esc(item.d.n)+'</button>';
+    });
+    html += '</div>';
+  });
+  html += '<div style="display:flex;gap:8px;margin-top:10px;">'+
+    '<button class="btn-danger" data-dc="all" style="padding:8px 14px;">☢️ Ejecutar TODAS</button>'+
+    '<button class="btn" data-dc="random" style="padding:8px 14px;">🎲 Aleatoria</button></div>';
+  html += '</div>';
+  var id = createWindow({title:'Centro de Destrucción · +70 formas', icon:'☠️', width:780, height:560, appId:'destroycenter', body:html});
+  var el = document.getElementById(id); if(!el) return id;
+  $$('[data-d70]', el).forEach(function(btn){
+    btn.onclick = function(){ try{ DESTRUCTIONS_70[+btn.dataset.d70].f(); }catch(e){ console.warn(e); } };
+  });
+  $$('[data-dc]', el).forEach(function(btn){
+    btn.onclick = function(){
+      if(btn.dataset.dc === 'all'){
+        if(!confirm('¿Ejecutar las 70 destrucciones a la vez?')) return;
+        var i = 0;
+        var iv = setInterval(function(){
+          if(i >= DESTRUCTIONS_70.length){ clearInterval(iv); return; }
+          if(isCDestroyed){ clearInterval(iv); return; }
+          try{ DESTRUCTIONS_70[i].f(); }catch(e){}
+          i++;
+        }, 250);
+      } else {
+        var r = DESTRUCTIONS_70[rnd(0, DESTRUCTIONS_70.length-1)];
+        try{ r.f(); }catch(e){}
+        toast('🎲 Aleatoria', r.i+' '+r.n, 'warn', 2500);
+      }
+    };
+  });
+  return id;
+}
+
 /* ============ EXPLORER ============ */
 function openExplorer(path){
+  if(isCDestroyed){ cBlocked(); return; }
   path = path || 'C:';
-  if(isCDestroyed){ showDialog({title:'Error del sistema', icon:'⛔', message:'El disco C: ha sido destruido.'}); playAudio('error'); return; }
   var existing = null;
   Object.keys(openWindows).forEach(function(wid){
     if(openWindows[wid].opts.appId==='explorer' && explorerStates[wid]){ navigateExplorer(wid, path); focusWindow(wid); existing=wid; }
@@ -1145,7 +1302,7 @@ function openExplorer(path){
     '</div>'+
     '<div class="exp-list" style="overflow:auto;flex:1;"></div>'+
     '<div class="status-bar"></div>'});
-  var el = document.getElementById(id);
+  var el = document.getElementById(id); if(!el) return id;
   var bodyEl = $('.window-body', el);
   bodyEl.style.display='flex'; bodyEl.style.flexDirection='column'; bodyEl.style.background='var(--win-bg)';
   explorerStates[id] = { path:path, history:[path], hIndex:0, search:'', sortBy:'name', sortAsc:true };
@@ -1162,7 +1319,7 @@ function wireExplorer(id){
       var a = nav.dataset.nav;
       if(a==='back' && st.hIndex>0){ st.hIndex--; st.path=st.history[st.hIndex]; renderExplorer(id); }
       if(a==='fwd' && st.hIndex<st.history.length-1){ st.hIndex++; st.path=st.history[st.hIndex]; renderExplorer(id); }
-      if(a==='up'){ var p = getParentPath(st.path); if(p!==st.path) navigateExplorer(id, p); }
+      if(a==='up'){ var p=getParentPath(st.path); if(p!==st.path) navigateExplorer(id,p); }
       if(a==='newfolder') newFolderIn(id);
       if(a==='newfile') newFileIn(id);
       return;
@@ -1196,7 +1353,7 @@ function wireExplorer(id){
   var s = $('[data-nav="search"]', body);
   if(s){ s.addEventListener('input', function(){ st.search=s.value; renderExplorer(id); }); s.addEventListener('keydown', function(e){ e.stopPropagation(); }); }
 }
-function navigateExplorer(id, path){
+function navigateExplorer(id,path){
   var st = explorerStates[id]; if(!st) return;
   st.path = path; st.history = st.history.slice(0, st.hIndex+1); st.history.push(path);
   st.hIndex = st.history.length-1; st.search=''; renderExplorer(id);
@@ -1206,6 +1363,16 @@ function renderExplorer(id){
   var st = explorerStates[id]; if(!st) return;
   var body = $('.window-body', el); if(!body) return;
   var listEl = $('.exp-list', body), crumbsEl = $('.crumbs', body), statusEl = $('.status-bar', body);
+  // 🔴 Disco destruido: mostrar vacío permanente
+  if(isCDestroyed){
+    if(crumbsEl) crumbsEl.innerHTML = '<span class="crumb" style="color:var(--danger);">⚠ Disco inaccesible</span>';
+    if(listEl) listEl.innerHTML = '<div style="padding:60px 20px;text-align:center;color:var(--text-dim);">'+
+      '<div style="font-size:72px;margin-bottom:14px;">💀</div>'+
+      '<div style="font-size:16px;font-weight:600;color:var(--danger);margin-bottom:6px;">El volumen C:\\ fue destruido</div>'+
+      '<div style="font-size:13px;">Todos los datos han sido eliminados.<br>Recarga la página (F5) para reinstalar BoxOS.</div></div>';
+    if(statusEl) statusEl.textContent = 'Error crítico · Volumen no montado';
+    return;
+  }
   var parts = splitPath(st.path);
   var curPath = '';
   crumbsEl.innerHTML = parts.map(function(p, idx){
@@ -1219,7 +1386,7 @@ function renderExplorer(id){
   }
   var items = Object.keys(node.content).map(function(name){
     var item = node.content[name];
-    return { name:name, type:item.type, size: item.type==='file' ? (item.size || 0) : 0, modified: item.modified || Date.now(), item:item };
+    return { name:name, type:item.type, size:item.type==='file'?(item.size||0):0, modified:item.modified||Date.now(), item:item };
   });
   if(st.search) items = items.filter(function(i){ return i.name.toLowerCase().indexOf(st.search.toLowerCase())>-1; });
   items.sort(function(a,b){
@@ -1258,6 +1425,7 @@ function newFileIn(id){
 }
 
 function deleteEntry(full, id){
+  if(isCDestroyed) return;
   var parts = splitPath(full);
   var name = parts.pop();
   var parentPath = parts.join('/') || 'C:';
@@ -1302,6 +1470,14 @@ function deleteEntry(full, id){
 
 function reactToDestruction(reaction, path){
   var shortName = splitPath(path).pop();
+  // 🔴 Si la acción marca killsSystem, destruir permanentemente
+  if(reaction.killsSystem){
+    playAudio('error');
+    toast('Destrucción total', 'Se eliminó '+shortName+'. El volumen C: queda inaccesible.', 'error', 4500);
+    setTimeout(function(){ killSystem(); }, 400);
+    setTimeout(function(){ triggerBSOD(reaction.bsod || 'CRITICAL_PROCESS_DIED'); }, 1400);
+    return;
+  }
   if(reaction.bsod){
     playAudio('error');
     toast('Error crítico del sistema', 'Se eliminó '+shortName+'. El sistema se detendrá.', 'error', 3500);
@@ -1340,11 +1516,16 @@ function applyEffect(effect){
   if(effect==='low-mem'){ damage.lowMem=true; applyDamageVisuals(); return; }
   if(effect==='overheat'){ damage.overheat=true; applyDamageVisuals(); return; }
   if(effect==='registry-corrupt'){ damage.registryCorrupt=true; setTimeout(function(){ triggerBSOD('REGISTRY_FILTER_DRIVER_EXCEPTION'); }, 1000); return; }
-  if(effect==='disk-wiped'){ damage.diskWiped=true; isCDestroyed=true; setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1200); return; }
-  if(effect==='gpedit-lock'){ damage.groupPolicyLock=true; toast('Directiva aplicada', 'Muchas funciones han sido bloqueadas.', 'warn', 4000); return; }
-  if(effect==='admin-deleted'){ damage.adminDeleted=true; toast('Cuenta eliminada', 'El administrador ha sido eliminado.', 'error', 4000); return; }
-  if(effect==='dotnet-removed'){ damage.dotnetRemoved=true; toast('.NET eliminado', 'Apps .NET no arrancarán.', 'warn', 4000); return; }
-  if(effect==='exec-policy-open'){ damage.executionPolicyOpen=true; toast('Política abierta', 'Scripts sin restricciones.', 'warn', 4000); return; }
+  if(effect==='disk-wiped'){
+    if(isCDestroyed) return;
+    setTimeout(function(){ killSystem(); }, 600);
+    setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1500);
+    return;
+  }
+  if(effect==='gpedit-lock'){ damage.groupPolicyLock=true; toast('Directiva aplicada','Muchas funciones han sido bloqueadas.','warn',4000); return; }
+  if(effect==='admin-deleted'){ damage.adminDeleted=true; toast('Cuenta eliminada','El administrador ha sido eliminado.','error',4000); return; }
+  if(effect==='dotnet-removed'){ damage.dotnetRemoved=true; toast('.NET eliminado','Apps .NET no arrancarán.','warn',4000); return; }
+  if(effect==='exec-policy-open'){ damage.executionPolicyOpen=true; toast('Política abierta','Scripts sin restricciones.','warn',4000); return; }
 }
 
 function showNoOS(){
@@ -1370,15 +1551,15 @@ function renameEntry(full, id){
     if(id) renderExplorer(id);
   }});
 }
-
 function openFileWith(full){
   var node = getNode(full); if(!node) return;
   if(full.toLowerCase().indexOf('.txt')>-1 || node.type==='file') openNotepad(full, node.content);
-  else toast('Abrir archivo', 'No hay app predeterminada.', 'info');
+  else toast('Abrir archivo','No hay app predeterminada.','info');
 }
 
 /* ============ CMD ============ */
 function openCMD(){
+  if(isCDestroyed){ cBlocked(); return; }
   var currentDir = 'C:\\Windows\\System32';
   var id = createWindow({title:'Símbolo del sistema', icon:'⬛', width:680, height:420, appId:'cmd', noPad:true,
     body:'<div class="cmd-body">'+
@@ -1405,6 +1586,10 @@ function execCMDCommand(cmdStr, output, promptEl){
   var arg = parts.slice(1).join(' ');
   var lowerArg = arg.toLowerCase().replace(/\\/g,'/');
 
+  /* Detecta destrucción total del volumen C: */
+  var isCRoot = /^c:\\?$/i.test(arg.trim());
+  var touchesWindows = /(^|\/|\\)windows(\/?$|\/|\\| )/i.test(arg) && !/system32/i.test(arg);
+
   if(cmd==='help'){
     output.textContent += 'Comandos: help, cls, dir, echo, ver, del, rmdir, format, shutdown, taskkill, bsod, sfc, exit,\n'+
       'diskpart, chkdsk, bcdedit, cipher, reg, net, takeown, icacls, attrib, sc, wmic,\n'+
@@ -1414,6 +1599,7 @@ function execCMDCommand(cmdStr, output, promptEl){
   else if(cmd==='ver'){ output.textContent += 'BoxOS 11 Ultra Destructible [10.0.22000]\n\n'; }
   else if(cmd==='echo'){ output.textContent += arg+'\n\n'; }
   else if(cmd==='dir'){
+    if(isCDestroyed){ output.textContent += 'El volumen C: no está montado.\n\n'; return; }
     var node = getNode('C:/Windows/System32');
     if(node && node.content){
       var text = ' Directorio de C:\\Windows\\System32\n\n';
@@ -1423,6 +1609,12 @@ function execCMDCommand(cmdStr, output, promptEl){
   }
   else if(cmd==='del'||cmd==='rm'||cmd==='erase'){
     if(!arg){ output.textContent += 'Falta nombre.\n\n'; return; }
+    /* 🚨 del C:\ */
+    if(isCRoot){
+      output.textContent += 'Eliminando C:\\ ...\n';
+      setTimeout(function(){ killSystem(); }, 700);
+      return;
+    }
     var target = arg;
     if(target.toLowerCase().indexOf('system32')>-1) target = 'C:/Windows/System32';
     else if(target.toLowerCase().indexOf('windows')>-1) target = 'C:/Windows';
@@ -1453,15 +1645,24 @@ function execCMDCommand(cmdStr, output, promptEl){
   }
   else if(cmd==='rmdir'||cmd==='rd'){
     var t = arg.replace(/\/s|\/q/g,'').trim();
+    if(/^c:\\?$/i.test(t)){ output.textContent += 'Eliminando árbol del volumen C:...\n'; setTimeout(function(){ killSystem(); }, 800); return; }
     if(t.toLowerCase().indexOf('windows')>-1 || t.toLowerCase().indexOf('system32')>-1){
       output.textContent += 'Eliminando árbol...\n';
-      setTimeout(function(){ triggerBSOD('CRITICAL_PROCESS_DIED'); }, 800);
+      setTimeout(function(){ killSystem(); }, 800);
     } else output.textContent += 'El directorio no está vacío.\n\n';
   }
-  else if(cmd==='format'){ output.textContent += 'Formateando...\n'; setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1200); }
+  else if(cmd==='format'){
+    if(/^c:?\\?$/i.test(arg.trim()) || /c:/i.test(arg)){
+      output.textContent += 'Formateando C:...\n';
+      setTimeout(function(){ killSystem(); }, 1200);
+    } else {
+      output.textContent += 'Formateando...\n';
+      setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1200);
+    }
+  }
   else if(cmd==='shutdown'){
-    if(lowerArg.indexOf('/r')>-1){ output.textContent += 'Reiniciando...\n'; setTimeout(restartOS, 800); }
-    else if(lowerArg.indexOf('/s')>-1){ output.textContent += 'Apagando...\n'; setTimeout(shutdownOS, 800); }
+    if(lowerArg.indexOf('/r')>-1){ output.textContent += 'Reiniciando...\n'; setTimeout(restartOS,800); }
+    else if(lowerArg.indexOf('/s')>-1){ output.textContent += 'Apagando...\n'; setTimeout(shutdownOS,800); }
     else output.textContent += 'Uso: shutdown /s | /r\n\n';
   }
   else if(cmd==='taskkill'){
@@ -1529,7 +1730,7 @@ function execCMDCommand(cmdStr, output, promptEl){
     else output.textContent += 'Uso: netsh interface set interface disable\n\n';
   }
   else if(cmd==='vssadmin'){
-    if(lowerArg.indexOf('delete')>-1){ output.textContent += 'Eliminando copias de sombra...\n'; setTimeout(function(){ toast('Copias eliminadas', 'Sin puntos de restauración.', 'error', 3000); }, 1500); }
+    if(lowerArg.indexOf('delete')>-1){ output.textContent += 'Eliminando copias de sombra...\n'; setTimeout(function(){ toast('Copias eliminadas','Sin puntos de restauración.','error',3000); }, 1500); }
     else output.textContent += 'Uso: vssadmin delete shadows /all\n\n';
   }
   else if(cmd==='dism'){
@@ -1543,7 +1744,6 @@ function execCMDCommand(cmdStr, output, promptEl){
     else output.textContent += 'Uso: mountvol <letra> /d\n\n';
   }
   else if(cmd==='compact'){ output.textContent += 'Comprimiendo...\n'; setTimeout(function(){ output.textContent += 'Archivos dañados.\n'; damage.fontCorrupt=true; applyDamageVisuals(); }, 1500); }
-  else if(cmd==='subst'){ output.textContent += 'Uso: subst <letra>: <ruta>\n\n'; }
   else if(cmd==='wbadmin'){ output.textContent += 'Uso: wbadmin delete catalog\n\n'; }
   else if(cmd==='fsutil'){
     if(lowerArg.indexOf('dirty')>-1 && lowerArg.indexOf('set')>-1){ output.textContent += 'Marcando volumen sucio...\n'; setTimeout(function(){ triggerBSOD('NTFS_FILE_SYSTEM'); }, 1200); }
@@ -1553,6 +1753,7 @@ function execCMDCommand(cmdStr, output, promptEl){
 }
 
 function openPowerShell(){
+  if(isCDestroyed){ cBlocked(); return; }
   var id = createWindow({title:'Windows PowerShell', icon:'🔷', width:680, height:420, appId:'powershell', noPad:true,
     body:'<div class="cmd-body" style="background:#012456;color:#eeedf0;">'+
       '<div class="cmd-output">Windows PowerShell\nCopyright (C) Microsoft Corp.\n\nPS C:\\Users\\Usuario&gt; </div>'+
@@ -1567,9 +1768,9 @@ function openPowerShell(){
       input.value = '';
       var low = val.toLowerCase();
       if(low==='clear'||low==='cls') output.textContent='';
-      else if(low.indexOf('remove-item')>-1 && (low.indexOf('windows')>-1||low.indexOf('c:\\')>-1)){ output.textContent += 'Eliminando...\n'; setTimeout(function(){ triggerBSOD('CRITICAL_PROCESS_DIED'); }, 900); }
-      else if(low.indexOf('format-volume')>-1){ output.textContent += 'Formateando...\n'; setTimeout(function(){ triggerBSOD('UNMOUNTABLE_BOOT_VOLUME'); }, 1000); }
-      else if(low.indexOf('clear-disk')>-1){ output.textContent += 'Borrando disco...\n'; setTimeout(function(){ applyEffect('disk-wiped'); }, 1200); }
+      else if(low.indexOf('remove-item')>-1 && (low.indexOf('windows')>-1||low.indexOf('c:\\')>-1)){ output.textContent += 'Eliminando...\n'; setTimeout(function(){ killSystem(); }, 900); }
+      else if(low.indexOf('format-volume')>-1){ output.textContent += 'Formateando...\n'; setTimeout(function(){ killSystem(); }, 1000); }
+      else if(low.indexOf('clear-disk')>-1){ output.textContent += 'Borrando disco...\n'; setTimeout(function(){ killSystem(); }, 1200); }
       else if(low.indexOf('set-executionpolicy')>-1){ output.textContent += 'Política cambiada.\n'; applyEffect('exec-policy-open'); }
       else if(low.indexOf('disable-windowsoptionalfeature')>-1||low.indexOf('uninstall-windowsfeature')>-1){ output.textContent += 'Desinstalando...\n'; setTimeout(function(){ applyEffect('dotnet-removed'); }, 1200); }
       else if(low.indexOf('stop-service')>-1){ output.textContent += 'Deteniendo servicios...\n'; setTimeout(function(){ applyEffect('no-services'); applyEffect('no-wmi'); }, 900); }
@@ -1585,6 +1786,7 @@ function openPowerShell(){
 
 /* ============ APPS ============ */
 function openRegedit(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Editor del Registro', icon:'🗝️', width:600, height:420, appId:'regedit',
     body:'<div style="font-family:Segoe UI,sans-serif;font-size:12.5px;">'+
       '<b>Editor del Registro</b><br><br>'+
@@ -1595,10 +1797,12 @@ function openRegedit(){
     '</div>'});
 }
 function openBoxStore(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Microsoft Store', icon:'🛍️', width:760, height:520, appId:'store',
     body:'<div style="font-size:16px;font-weight:600;margin-bottom:16px;">Apps destacadas</div>'+
       '<div class="store-grid">'+
         '<div class="store-item"><h4>🛡️ Box Antivirus Pro</h4><p>Protección total.</p><button onclick="toast(\'Instalado\',\'Ya está instalado.\',\'ok\')">Instalado</button></div>'+
+        '<div class="store-item"><h4>☠️ Centro de Destrucción</h4><p>+70 formas nuevas.</p><button onclick="openDestructionCenter()">Abrir</button></div>'+
         '<div class="store-item"><h4>💣 Ransomware Simulator</h4><p>Encripta el disco.</p><button onclick="triggerRansomware()">Ejecutar</button></div>'+
         '<div class="store-item"><h4>⚡ ForkBomb 3000</h4><p>Estrés extremo.</p><button onclick="triggerForkBomb()">Ejecutar</button></div>'+
         '<div class="store-item"><h4>💰 CryptoMiner</h4><p>Minar al 100% CPU.</p><button onclick="triggerMiner()">Ejecutar</button></div>'+
@@ -1610,6 +1814,7 @@ function openBoxStore(){
       '</div>'});
 }
 function openTaskManager(){
+  if(isCDestroyed){ cBlocked(); return; }
   var id = createWindow({title:'Administrador de tareas', icon:'📊', width:620, height:420, appId:'taskmgr',
     body:'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'+
       '<b>Procesos</b><button class="btn-danger" id="tm-kill" style="margin-left:auto;">Finalizar</button></div>'+
@@ -1647,6 +1852,7 @@ function openTaskManager(){
   return id;
 }
 function openNotepad(filePath, initialContent){
+  if(isCDestroyed){ cBlocked(); return; }
   var path = filePath || '';
   var id = createWindow({title: path?'Bloc de notas - '+path:'Bloc de notas', icon:'📝', width:560, height:380, appId:'notepad', noPad:true,
     body:'<div style="display:flex;flex-direction:column;height:100%;">'+
@@ -1671,6 +1877,7 @@ function saveFileContent(path, content){
   if(parent && parent.type==='dir') parent.content[fileName] = mkfile(content);
 }
 function openCalculator(){
+  if(isCDestroyed){ cBlocked(); return; }
   var id = createWindow({title:'Calculadora', icon:'🧮', width:300, autoHeight:true, appId:'calc',
     body:'<div style="display:flex;flex-direction:column;gap:8px;">'+
       '<input class="calc-disp" style="font-size:20px;text-align:right;padding:10px;" value="0" readonly>'+
@@ -1688,6 +1895,7 @@ function openCalculator(){
   return id;
 }
 function openSettings(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Configuración', icon:'⚙️', width:640, height:460, appId:'settings',
     body:'<div style="display:flex;gap:16px;height:100%;">'+
       '<div style="width:160px;border-right:1px solid var(--win-border);display:flex;flex-direction:column;gap:6px;">'+
@@ -1705,12 +1913,13 @@ function openSettings(){
 }
 function setSettingsTab(tab){
   var c = $('#settings-tab-content'); if(!c) return;
-  if(tab==='sys'){ c.innerHTML = '<h3>Sistema</h3><br><div class="kv"><span>SO</span><span>BoxOS 11 Ultra Destructible</span></div>'; }
+  if(tab==='sys'){ c.innerHTML = '<h3>Sistema</h3><br><div class="kv"><span>SO</span><span>BoxOS 11 Ultra Destructible v2</span></div>'; }
   else if(tab==='personal'){ c.innerHTML = '<h3>Personalización</h3><br>Tema: <select onchange="settings.theme=this.value;applySettings();"><option value="dark">Oscuro</option><option value="light">Claro</option></select><br><br><button class="btn" onclick="cycleWallpaper()">Cambiar fondo</button>'; }
   else if(tab==='sound'){ c.innerHTML = '<h3>Sonido</h3><br>Volumen: <input type="range" min="0" max="100" value="'+settings.volume+'" oninput="setVolume(this.value)"><br><br><button class="btn" onclick="toggleSound()">Activar/Desactivar</button>'; }
   else if(tab==='reset'){ c.innerHTML = '<h3>Restablecer</h3><br><button class="btn-danger" onclick="factoryReset()">Restablecer fábrica</button>'; }
 }
 function openAntivirus(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Seguridad de Windows', icon:'🛡️', width:580, height:400, appId:'defender',
     body:'<div><h3>🛡️ Protección</h3><br>'+
       '<div class="kv"><span>Tiempo real</span><b style="color:'+(damage.defenderDead?'#ef4444':'#10b981')+';">'+(damage.defenderDead?'Deshabilitada':'Activada')+'</b></div>'+
@@ -1724,6 +1933,7 @@ function runAntivirusScan(){
 }
 function cleanRansomware(){ ransomwareActive=false; clearInterval(ransomwareTimer); var r=$('#ransomware'); if(r) r.style.display='none'; toast('Ransomware eliminado','Archivos desencriptados.','ok',4000); }
 function openBrowser(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Microsoft Edge', icon:'🌐', width:740, height:480, appId:'browser', noPad:true,
     body:'<div style="display:flex;flex-direction:column;height:100%;">'+
       '<div class="exp-toolbar"><input style="flex:1;" value="https://box.os/welcome" readonly></div>'+
@@ -1732,6 +1942,7 @@ function openBrowser(){
       '</div></div>'});
 }
 function openRecycleBin(){
+  if(isCDestroyed){ cBlocked(); return; }
   var id = createWindow({title:'Papelera', icon:'🗑️', width:600, height:380, appId:'recycle',
     body:'<div class="exp-toolbar"><button class="btn-danger" id="rb-empty">Vaciar</button></div><div id="rb-list" style="padding:12px;overflow:auto;flex:1;"></div>'});
   var el = document.getElementById(id); if(!el) return id;
@@ -1745,9 +1956,10 @@ function openRecycleBin(){
   renderRB();
   return id;
 }
-function openPaint(){ return createWindow({title:'Paint', icon:'🎨', width:600, height:400, appId:'paint', body:'<canvas id="paint-canvas" width="550" height="300" style="background:#fff;border:1px solid #888;"></canvas>'}); }
-function openPhotos(){ return createWindow({title:'Fotos', icon:'🖼️', width:500, height:350, appId:'photos', body:'<div style="text-align:center;padding:40px;">🖼️<br><br>Sin fotos.</div>'}); }
+function openPaint(){ if(isCDestroyed){ cBlocked(); return; } return createWindow({title:'Paint', icon:'🎨', width:600, height:400, appId:'paint', body:'<canvas id="paint-canvas" width="550" height="300" style="background:#fff;border:1px solid #888;"></canvas>'}); }
+function openPhotos(){ if(isCDestroyed){ cBlocked(); return; } return createWindow({title:'Fotos', icon:'🖼️', width:500, height:350, appId:'photos', body:'<div style="text-align:center;padding:40px;">🖼️<br><br>Sin fotos.</div>'}); }
 function openDeviceManager(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Administrador de dispositivos', icon:'🔧', width:560, height:420, appId:'devmgr',
     body:'<div><b>Adaptadores de pantalla</b><br>└ '+(damage.gpuFailed?'⚠ Desconocido':'NVIDIA RTX 4090')+
       '<br><br><b>Sonido</b><br>└ '+(damage.audioFailed?'⚠ No detectado':'Realtek HD Audio')+
@@ -1756,24 +1968,28 @@ function openDeviceManager(){
       '<button class="btn-danger" onclick="applyEffect(\'no-audio\')">Deshabilitar audio</button></div>'});
 }
 function openDiskManager(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Administración de discos', icon:'💽', width:580, height:400, appId:'diskmgr',
     body:'<div><b>Disco 0 (C:) - NTFS - 2000 GB</b><br><br>'+
       '<button class="btn-danger" onclick="applyEffect(\'disk-wiped\')" style="margin-right:6px;">Formatear C:</button>'+
       '<button class="btn-danger" onclick="openWiper()">Wiper</button></div>'});
 }
 function openWindowsUpdate(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Windows Update', icon:'🔄', width:520, height:360, appId:'update',
     body:'<div><h3>Windows Update</h3><br>'+
       (damage.updateBroken?'<p style="color:#ef4444;">⚠ Servicio roto.</p>':'<p>Tu sistema está actualizado.</p>')+
       '<br><button class="btn btn-primary" onclick="triggerBSOD(\'UPDATE_FAILED_SYSTEM_CORRUPTION\')">Forzar actualización corrupta</button></div>'});
 }
 function openEventViewer(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Visor de eventos', icon:'📋', width:560, height:400, appId:'eventvwr',
     body: damage.eventsDead
       ? '<div style="color:#ef4444;">⚠ Los registros de eventos fueron eliminados.</div>'
       : '<div><b>Eventos recientes:</b><br><br>• [INFO] Sistema iniciado<br>• [WARN] Disco bajo</div>'});
 }
 function openServices(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Servicios', icon:'⚡', width:620, height:460, appId:'services',
     body:'<div><b>Servicios del sistema</b><br><br>'+
       '<div class="kv"><span>BoxOS Update</span><span style="color:'+(damage.updateBroken?'#ef4444':'#10b981')+';">'+(damage.updateBroken?'Detenido':'Ejecutando')+'</span></div>'+
@@ -1783,6 +1999,7 @@ function openServices(){
       '<br><button class="btn-danger" onclick="applyEffect(\'no-services\')">Detener todos</button></div>'});
 }
 function openDiskpart(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'DiskPart', icon:'💥', width:520, height:360, appId:'diskpart', noPad:true,
     body:'<div class="cmd-body" style="background:#0c0c0c;">'+
       '<div style="color:#cccccc;">Microsoft DiskPart v10.0\n\nDISKPART> </div>'+
@@ -1793,6 +2010,7 @@ function openDiskpart(){
       '</div></div>'});
 }
 function openFeatures(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Características de Windows', icon:'🧩', width:620, height:440, appId:'features',
     body:'<div><b>Activar o desactivar características</b><br><br>'+
       '<div class="kv"><span>.NET Framework 4.8</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="applyEffect(\'dotnet-removed\')">Desinstalar</button></div>'+
@@ -1803,6 +2021,7 @@ function openFeatures(){
     '</div>'});
 }
 function openUserManager(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Administración de usuarios', icon:'👥', width:580, height:400, appId:'userdel',
     body:'<div><b>Cuentas de usuario</b><br><br>'+
       '<div class="kv"><span>👤 Administrador (admin)</span><button class="btn-danger" style="padding:2px 8px;font-size:11px;" onclick="applyEffect(\'admin-deleted\')">Eliminar</button></div>'+
@@ -1811,6 +2030,7 @@ function openUserManager(){
     '</div>'});
 }
 function openWiper(){
+  if(isCDestroyed){ cBlocked(); return; }
   return createWindow({title:'Wiper Zero-Fill', icon:'🧹', width:520, height:340, appId:'wiper',
     body:'<div><b>⚠⚠ WIPER — Sobrescritura total</b><br><br>'+
       'Esta herramienta sobrescribe TODOS los datos.<br><br>'+
@@ -1903,6 +2123,12 @@ function restartOS(){
   var bt = $('#boot-text'); if(bt) bt.textContent = 'Reiniciando BoxOS 11...';
   setTimeout(function(){
     if(boot) boot.style.setProperty('display','none','important');
+    // 🔴 Si el disco fue destruido, no hay nada que reiniciar
+    if(isCDestroyed){
+      applyDamageVisuals();
+      toast('Sistema inoperable','El disco C: está destruido. Recarga la página (F5) para reinstalar BoxOS.','error',9000);
+      return;
+    }
     if(damage.bootloaderGone){ showNoOS(); return; }
     if(damage.explorerDead) applyDamageVisuals();
     playAudio('startup');
@@ -1915,32 +2141,28 @@ function shutdownOS(){
 }
 function bootSafeMode(){ safeMode=true; $('#bsod').style.display='none'; applySettings(); toast('Modo seguro','BoxOS ha iniciado en Modo Seguro.','warn'); }
 function hideScreen(id){ var el = document.getElementById(id); if(el) el.style.display='none'; }
-function toggleWidgets(){ $('#widgets-panel').classList.toggle('open'); }
+function toggleWidgets(){ if(isCDestroyed){ cBlocked(); return; } $('#widgets-panel').classList.toggle('open'); }
 
 /* ============ INICIALIZACIÓN ============ */
 function initBoxOS(){
   try{ localStorage.removeItem('boxos11'); }catch(e){}
+  try{ localStorage.removeItem('boxos11_v2'); }catch(e){}
   vfs = createVFS(); recycleBin = [];
 
-  try{ applySettings(); }catch(e){ console.warn('applySettings failed:', e); }
-  try{ renderDesktopIcons(); }catch(e){ console.warn('renderDesktopIcons failed:', e); }
-  try{ updateClock(); }catch(e){ console.warn('updateClock failed:', e); }
+  try{ applySettings(); }catch(e){ console.warn('applySettings:',e); }
+  try{ renderDesktopIcons(); }catch(e){ console.warn('renderDesktopIcons:',e); }
+  try{ updateClock(); }catch(e){ console.warn('updateClock:',e); }
   setInterval(updateClock, 1000);
-  try{ renderMiniCalendar(); }catch(e){ console.warn('renderMiniCalendar failed:', e); }
+  try{ renderMiniCalendar(); }catch(e){ console.warn('renderMiniCalendar:',e); }
 
-  // Ocultar pantalla de arranque (con múltiples mecanismos de seguridad)
   var bootScreen = document.getElementById('boot-screen');
   function hideBoot(){
     if(bootScreen) bootScreen.style.setProperty('display','none','important');
     if(damage.bootloaderGone){ showNoOS(); return; }
     playAudio('startup');
   }
-  if(bootScreen){
-    bootScreen.onclick = hideBoot;
-    setTimeout(hideBoot, 2200);
-  }
+  if(bootScreen){ bootScreen.onclick = hideBoot; setTimeout(hideBoot, 2200); }
 
-  // PIN de bloqueo
   var lockPin = $('#lock-pin');
   if(lockPin){
     lockPin.addEventListener('keydown', function(e){
@@ -1971,19 +2193,26 @@ function initBoxOS(){
     if(!e.target.closest('#ctx-menu')) hideContextMenu();
   });
 
-  // Forzar ocultación de la pantalla de arranque tras un tiempo máximo
   setTimeout(function(){
     var bs = document.getElementById('boot-screen');
     if(bs) bs.style.setProperty('display','none','important');
   }, 3500);
 }
 
-if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', initBoxOS);
-} else {
-  // El DOM ya está listo (script cargado tarde)
-  initBoxOS();
+function openTaskView(){
+  if(isCDestroyed){ cBlocked(); return; }
+  var tv = $('#task-view'); if(!tv) return;
+  var grid = $('#tv-grid');
+  grid.innerHTML = Object.keys(openWindows).map(function(id){
+    var w = openWindows[id];
+    return '<div class="tv-card" data-tv="'+id+'"><div class="tv-title"><span>'+w.opts.icon+'</span><span>'+esc(w.opts.title)+'</span></div><div class="tv-preview">'+w.opts.icon+'</div></div>';
+  }).join('') || '<div style="color:#fff;opacity:.6;">No hay ventanas abiertas.</div>';
+  $$('.tv-card', grid).forEach(function(c){ c.onclick = function(){ tv.classList.remove('open'); focusWindow(c.dataset.tv); }; });
+  tv.classList.toggle('open');
 }
+
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initBoxOS); }
+else { initBoxOS(); }
 </script>
 </body>
 </html>

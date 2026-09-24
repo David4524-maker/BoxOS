@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>macOS Sonoma — Ultra Destructible (BoxOS11 port)</title>
+<style>
+:root{
+  --accent:#0a84ff;--win-bg:rgba(30,30,32,.72);--win-header:rgba(40,40,42,.9);
+  --win-border:rgba(255,255,255,.09);--text:#f5f5f7;--text-dim:#a1a1a6;--text-dim2:#6e6e73;
+  --menu-bg:rgba(20,20,22,.72);--dock-bg:rgba(30,30,32,.55);--hover:rgba(255,255,255,.08);
+  --hover-2:rgba(255,255,255,.16);--danger:#ff453a;--warn:#ff9f0a;--ok:#30d158;
+  --sidebar:rgba(28,28,30,.6);--input-bg:rgba(0,0,0,.35);--row:rgba(255,255,255,.06);
+}
+body.light{--win-bg:rgba(245,245,247,.85);--win-header:rgba(230,230,232,.95);--win-border:rgba(0,0,0,.08);--text:#1d1d1f;--text-dim:#6e6e73;--menu-bg:rgba(255,255,255,.75);--dock-bg:rgba(255,255,255,.55);--hover:rgba(0,0,0,.05);--hover-2:rgba(0,0,0,.1);--sidebar:rgba(240,240,242,.7);--input-bg:rgba(255,255,255,.7);--row:rgba(0,0,0,.04);}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;user-select:none;-webkit-font-smoothing:antialiased}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--text)}
+#menubar{position:fixed;top:0;left:0;right:0;height:24px;background:var(--menu-bg);backdrop-filter:blur(30px) saturate(180%);display:flex;align-items:center;padding:0 10px;z-index:99999;font-size:13px}
+.mb-item{padding:2px 10px;border-radius:5px;cursor:default;height:20px;display:flex;align-items:center}
+.mb-item:hover{background:var(--hover-2)}
+.mb-apple{font-size:15px;font-weight:700}
+.mb-right{margin-left:auto;display:flex;align-items:center;gap:2px;font-size:12.5px}
+#desktop{position:absolute;inset:24px 0 0 0;overflow:hidden;transition:background .4s}
+#desktop.wp-1{background:linear-gradient(160deg,#0b0f2e 0%,#1a1443 30%,#4c1d95 65%,#9333ea 100%)}
+#desktop.wp-2{background:linear-gradient(135deg,#ff0080,#7928ca 50%,#0070f3)}
+#desktop.wp-3{background:linear-gradient(180deg,#1c2c5b,#2d1b4e 40%,#e94e77)}
+#desktop.wp-4{background:linear-gradient(135deg,#001b3d,#0a4d8c 40%,#ec4899)}
+#desktop.wp-5{background:linear-gradient(180deg,#0e0519,#4a1a6b 50%,#f6a5c0)}
+#desktop.wp-6{background:linear-gradient(135deg,#1a1a1d,#2d2d30)}
+#desktop.wp-7{background:linear-gradient(135deg,#0f766e,#06b6d4 60%,#fef3c7)}
+#desktop.wp-8{background:linear-gradient(135deg,#0c1445,#1e3a8a 50%,#6366f1)}
+body.safe-mode #desktop{background:#1a1a1d !important}
+body.no-gpu #desktop{filter:grayscale(60%) contrast(180%) hue-rotate(90deg);animation:gpuGlitch .18s infinite}
+@keyframes gpuGlitch{0%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,2px)}80%{transform:translate(1px,-2px)}100%{transform:translate(0,0)}}
+body.no-finder #desktop{background:#000 !important}
+body.no-finder .desktop-icon{display:none !important}
+body.corrupt-text,body.corrupt-text *{font-family:'Comic Sans MS','Papyrus',cursive !important;letter-spacing:2px}
+body.no-audio #mb-sound{color:var(--danger) !important}
+body.no-network #mb-wifi{color:var(--danger) !important}
+body.low-mem .window{animation:memFlicker .8s infinite}
+@keyframes memFlicker{0%,100%{opacity:1}50%{opacity:.85}}
+body.overheat #desktop{animation:heatShimmer 1.5s infinite}
+@keyframes heatShimmer{0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.15) saturate(1.4) hue-rotate(-10deg)}}
+body.c-destroyed #desktop{background:#000 !important}
+body.c-destroyed .desktop-icon{opacity:.25;filter:grayscale(1);pointer-events:none}
+.desktop-icon{position:absolute;width:90px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:8px;color:#fff;font-size:11.5px;text-shadow:0 1px 3px rgba(0,0,0,.9);cursor:default;border-radius:6px;text-align:center;touch-action:none}
+.desktop-icon:hover{background:rgba(255,255,255,.1)}
+.desktop-icon.selected{background:rgba(10,132,255,.35)}
+.icon-img{font-size:44px;margin-bottom:4px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
+.icon-label{line-height:1.15;padding:1px 4px;border-radius:3px;word-wrap:break-word}
+.desktop-icon.selected .icon-label{background:var(--accent)}
+#dock{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);height:64px;background:var(--dock-bg);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:6px 8px;display:flex;align-items:flex-end;gap:4px;z-index:99998;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+#dock.hidden{transform:translateX(-50%) translateY(80px)}
+.dock-item{width:52px;height:52px;border-radius:12px;display:flex;align-items:flex-end;justify-content:center;font-size:36px;cursor:pointer;position:relative;transition:transform .2s cubic-bezier(.2,.9,.3,1);transform-origin:bottom center;filter:drop-shadow(0 3px 5px rgba(0,0,0,.4))}
+.dock-item:hover{transform:scale(1.35) translateY(-6px)}
+.dock-item .dock-label{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
+.dock-item:hover .dock-label{opacity:1}
+.dock-item.running::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%}
+.dock-sep{width:1px;height:48px;background:rgba(255,255,255,.2);margin:0 4px;align-self:flex-end}
+.window{position:absolute;min-width:340px;min-height:200px;background:var(--win-bg);backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--win-border);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.55),0 0 0 .5px rgba(255,255,255,.05) inset;display:flex;flex-direction:column;overflow:hidden;z-index:10}
+.window.opening{animation:winOpen .18s cubic-bezier(.2,.9,.3,1)}
+@keyframes winOpen{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.window.focused{box-shadow:0 30px 80px rgba(0,0,0,.65),0 0 0 .5px rgba(255,255,255,.1) inset}
+.window.maximized{border-radius:0;border:none}
+.window-header{background:var(--win-header);height:38px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--win-border);flex:0 0 auto;position:relative}
+.traffic{display:flex;gap:8px;align-items:center;flex:0 0 auto;z-index:2}
+.tl{width:12px;height:12px;border-radius:50%;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(0,0,0,.6);font-weight:bold}
+.tl-close{background:#ff5f57}.tl-min{background:#febc2e}.tl-max{background:#28c840}
+.tl span{opacity:0;transition:opacity .1s}
+.traffic:hover .tl span{opacity:1}
+.window-title{position:absolute;left:0;right:0;text-align:center;font-size:13px;font-weight:600;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 110px}
+.window-body{flex:1;overflow:auto;background:var(--win-bg);color:var(--text);font-size:13px;padding:16px}
+.window-body.no-pad{padding:0}
+.rz{position:absolute;z-index:5}.rz-se{right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize}.rz-e{right:0;top:38px;width:5px;height:calc(100% - 38px);cursor:ew-resize}.rz-s{left:0;bottom:0;width:100%;height:5px;cursor:ns-resize}
+#launchpad{position:fixed;inset:24px 0 0 0;background:rgba(20,20,30,.75);backdrop-filter:blur(50px);display:none;z-index:150000;padding:80px 60px;overflow:auto}
+#launchpad.open{display:block;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.lp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:36px 20px;max-width:1100px;margin:0 auto}
+.lp-item{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+.lp-icon{width:80px;height:80px;border-radius:18px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:48px;box-shadow:0 8px 20px rgba(0,0,0,.4);transition:transform .15s}
+.lp-item:hover .lp-icon{transform:scale(1.08)}
+.lp-name{color:#fff;font-size:12px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+#spotlight{position:fixed;top:22%;left:50%;transform:translateX(-50%);width:640px;background:var(--win-bg);backdrop-filter:blur(40px);border:1px solid var(--win-border);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:none;z-index:150000;overflow:hidden}
+#spotlight.open{display:block;animation:spotIn .15s cubic-bezier(.2,.9,.3,1)}
+@keyframes spotIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+.spotlight-input{width:100%;padding:18px 24px;background:transparent;border:none;color:var(--text);font-size:22px;outline:none}
+.spotlight-results{max-height:340px;overflow-y:auto;border-top:1px solid var(--win-border)}
+.spotlight-item{padding:10px 18px;display:flex;align-items:center;gap:12px;font-size:13.5px;cursor:pointer;border-bottom:1px solid var(--win-border)}
+.spotlight-item:hover,.spotlight-item.sel{background:var(--accent);color:#fff}
+#notifications{position:fixed;top:34px;right:10px;display:flex;flex-direction:column;gap:8px;z-index:150002;width:340px;pointer-events:none}
+.toast{background:var(--win-bg);backdrop-filter:blur(40px);border:1px solid var(--win-border);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.55);animation:toastIn .3s cubic-bezier(.2,.9,.3,1);pointer-events:auto;position:relative}
+.toast::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:14px 0 0 14px}
+.toast.err::before{background:var(--danger)}.toast.ok::before{background:var(--ok)}.toast.warn::before{background:var(--warn)}
+.toast.out{animation:toastOut .3s forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(60px)}}
+.toast-title{font-size:13px;font-weight:600}
+.toast-msg{font-size:12px;color:var(--text-dim);margin-top:3px;line-height:1.4}
+#ctx-menu{position:fixed;background:var(--win-bg);backdrop-filter:blur(40px);border:1px solid var(--win-border);border-radius:10px;box-shadow:0 15px 40px rgba(0,0,0,.6);padding:5px;display:none;z-index:150003;min-width:200px}
+#ctx-menu .ctx-item{padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer;display:flex;gap:10px;align-items:center}
+#ctx-menu .ctx-item:hover{background:var(--accent);color:#fff}
+#ctx-menu .ctx-sep{height:1px;background:var(--win-border);margin:4px 6px}
+.fullscreen{position:fixed;inset:0;z-index:200000;display:none;flex-direction:column}
+#boot-screen{background:#000;align-items:center;justify-content:center;gap:26px;color:#fff}
+.apple-logo{font-size:96px;animation:pulse 2s infinite ease-in-out;filter:drop-shadow(0 0 20px rgba(255,255,255,.3))}
+@keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+.boot-bar{width:260px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden}
+.boot-bar-fill{height:100%;width:0;background:#fff;border-radius:3px;transition:width .3s}
+#login-screen{background:linear-gradient(135deg,#001b3d,#0a4d8c);align-items:center;justify-content:center;gap:16px;color:#fff}
+.login-avatar{width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:56px;border:1px solid rgba(255,255,255,.3)}
+.login-name{font-size:22px;font-weight:400}
+.login-pass{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 14px;border-radius:20px;width:240px;text-align:center;font-size:13px;outline:none}
+.login-hint{font-size:12px;opacity:.6}
+#kernel-panic{background:#1a1a1a;color:#fff;align-items:center;justify-content:center;padding:40px;text-align:center;z-index:300000;gap:20px}
+.kp-message{font-size:80px;font-weight:100;line-height:1}
+.kp-text{font-size:16px;max-width:600px;line-height:1.6}
+.kp-hint{font-size:13px;opacity:.7;margin-top:10px}
+#recovery-screen{background:#1a1a1a;color:#fff;align-items:center;justify-content:center;gap:20px;text-align:center;padding:40px;z-index:300002}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#verbose-boot,#single-user{background:#000;color:#fff;font-family:'SF Mono',Menlo,monospace;padding:20px;font-size:12px;line-height:1.5;overflow:auto}
+#beachball{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;z-index:250000;display:none;pointer-events:none;animation:spin 1.4s linear infinite}
+#beachball.on{display:block}
+#shutdown-screen{background:#000;color:#dcdcdc;align-items:center;justify-content:center;gap:20px;z-index:300002}
+#ransomware{background:#8b0000;color:#fff;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:250000;flex-direction:column}
+.terminal-body{background:rgba(0,0,0,.85);color:#f5f5f7;font-family:'SF Mono',Menlo,monospace;padding:12px;font-size:12.5px;line-height:1.45;height:100%;display:flex;flex-direction:column}
+.terminal-output{flex:1;overflow-y:auto;white-space:pre-wrap;user-select:text}
+.terminal-line{display:flex;gap:0;align-items:center}
+.terminal-prompt{color:#30d158;white-space:nowrap}
+.terminal-input{background:transparent;border:none;color:#f5f5f7;font-family:inherit;outline:none;width:100%;font-size:12.5px}
+button{cursor:pointer;font-family:inherit}
+.btn{background:var(--row);color:var(--text);border:1px solid var(--win-border);padding:6px 14px;border-radius:6px;font-size:12.5px}
+.btn:hover{background:var(--hover-2)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn-danger{background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px}
+.btn-danger:hover{filter:brightness(1.1)}
+input,textarea,select{background:var(--input-bg);color:var(--text);border:1px solid var(--win-border);border-radius:6px;padding:6px 10px;outline:none;font-size:12.5px;font-family:inherit}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.15)}
+.finder-wrap{display:flex;height:100%}
+.finder-sidebar{width:180px;background:var(--sidebar);backdrop-filter:blur(30px);border-right:1px solid var(--win-border);padding:8px 0;overflow:auto;flex:0 0 auto}
+.finder-section{padding:8px 16px 4px;font-size:10.5px;color:var(--text-dim2);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.finder-item{padding:5px 16px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px;border-radius:4px;margin:1px 6px}
+.finder-item:hover{background:var(--hover)}
+.finder-item.active{background:var(--accent);color:#fff}
+.finder-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.finder-toolbar{padding:8px 12px;border-bottom:1px solid var(--win-border);display:flex;gap:8px;align-items:center;background:var(--win-header)}
+.finder-toolbar .btn{padding:4px 10px;font-size:12px}
+.finder-path{flex:1;font-size:12px;color:var(--text-dim);padding:4px 10px;background:var(--input-bg);border-radius:6px;font-family:SF Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.finder-list{flex:1;overflow:auto;padding:4px 0}
+.finder-row{display:flex;align-items:center;padding:6px 14px;font-size:12.5px;cursor:default;border-bottom:1px solid var(--win-border)}
+.finder-row:hover{background:var(--hover)}
+.finder-row.sel{background:var(--accent);color:#fff}
+.finder-row .fr-icon{width:24px;font-size:16px}
+.finder-row .fr-name{flex:1}
+.finder-row .fr-size{width:80px;text-align:right;color:var(--text-dim)}
+.finder-row .fr-date{width:150px;text-align:right;color:var(--text-dim)}
+.finder-row .fr-act{padding:2px 6px;font-size:11px;margin-left:6px}
+.finder-status{padding:5px 14px;border-top:1px solid var(--win-border);font-size:11px;color:var(--text-dim);background:var(--win-header)}
+.dc-cat{margin:16px 0 6px;font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--win-border);padding-bottom:4px}
+.dc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-bottom:10px}
+.dc-btn{background:var(--row);color:var(--text);border:1px solid var(--win-border);padding:9px 12px;border-radius:8px;text-align:left;font-size:12px;cursor:pointer;transition:.12s}
+.dc-btn:hover{background:var(--danger);color:#fff;transform:translateY(-1px);border-color:var(--danger)}
+.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.store-item{background:var(--row);padding:14px;border-radius:8px;border:1px solid var(--win-border);display:flex;flex-direction:column;gap:10px}
+.store-item h4{font-size:13px}
+.store-item p{font-size:11.5px;color:var(--text-dim);flex:1;line-height:1.4}
+.store-item button{background:var(--accent);color:#fff;border:none;padding:8px;border-radius:6px;font-weight:600;font-size:12px}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--win-border);font-size:12.5px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="menubar">
+  <div class="mb-item mb-apple" onclick="toggleAppleMenu()">🍎</div>
+  <div class="mb-item" id="mb-appname" style="font-weight:600">Finder</div>
+  <div class="mb-item">Archivo</div>
+  <div class="mb-item">Edición</div>
+  <div class="mb-item">Ver</div>
+  <div class="mb-item">Ir</div>
+  <div class="mb-item">Ventana</div>
+  <div class="mb-item">Ayuda</div>
+  <div class="mb-right">
+    <div class="mb-item" id="mb-battery">🔋 100%</div>
+    <div class="mb-item" id="mb-wifi" onclick="toggleFlyout('net-flyout')">📶</div>
+    <div class="mb-item" onclick="toggleSpotlight()">🔍</div>
+    <div class="mb-item" onclick="toggleCC()">🎛️</div>
+    <div class="mb-item" id="mb-clock">12:00</div>
+  </div>
+</div>
+
+<div id="desktop" class="wp-4"></div>
+<div id="dock"></div>
+<div id="beachball">🌊</div>
+
+<div id="launchpad"><div class="lp-grid" id="lp-grid"></div></div>
+
+<div id="spotlight">
+  <input class="spotlight-input" id="spot-input" placeholder="Spotlight Search" autocomplete="off">
+  <div class="spotlight-results" id="spot-results"></div>
+</div>
+
+<div id="control-center" class="flyout" style="position:fixed;top:34px;right:10px;width:320px;background:var(--win-bg);backdrop-filter:blur(40px);border:1px solid var(--win-border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.6);padding:14px;display:none;z-index:150001">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div style="background:var(--hover);border-radius:12px;padding:12px;font-size:11.5px;grid-column:1/-1"><b>📶 Wi-Fi</b><br><span style="color:var(--text-dim)">BoxNet 6E</span></div>
+    <div style="background:var(--hover);border-radius:12px;padding:12px;font-size:11.5px"><b>🔵 Bluetooth</b></div>
+    <div style="background:var(--hover);border-radius:12px;padding:12px;font-size:11.5px"><b>🌙 No molestar</b></div>
+    <div style="background:var(--hover);border-radius:12px;padding:12px;font-size:11.5px;grid-column:1/-1"><b>🔊 Sonido</b><input type="range" min="0" max="100" value="70" style="width:100%;margin-top:8px" oninput="setVolume(this.value)"></div>
+  </div>
+</div>
+<div class="flyout" id="net-flyout" style="position:fixed;bottom:56px;right:12px;background:var(--win-bg);backdrop-filter:blur(40px);border:1px solid var(--win-border);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.6);padding:16px;display:none;z-index:150001;width:320px">
+  <div style="font-size:14px;margin-bottom:10px">📶 Red</div>
+  <div class="kv"><span>Adaptador</span><span>BoxNet 6E</span></div>
+  <div class="kv"><span>Estado</span><span style="color:var(--ok)">Conectado</span></div>
+  <div class="kv"><span>IP</span><span style="font-family:SF Mono,monospace">192.168.1.42</span></div>
+</div>
+
+<div id="notifications"></div>
+<div id="ctx-menu"></div>
+
+<div class="fullscreen" id="boot-screen">
+  <div class="apple-logo">🍎</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+</div>
+
+<div class="fullscreen" id="login-screen">
+  <div class="login-avatar">👤</div>
+  <div class="login-name">Usuario</div>
+  <input type="password" class="login-pass" id="login-pass" placeholder="Introducir contraseña" maxlength="20">
+  <div class="login-hint">Pulsa Enter (contraseña: <b>box</b>)</div>
+</div>
+
+<div class="fullscreen" id="kernel-panic">
+  <div class="kp-message">:(</div>
+  <div class="kp-text">Tu ordenador se reinició debido a un problema.</div>
+  <div class="kp-hint" id="kp-code">Código: CRITICAL_PROCESS_DIED</div>
+  <div style="display:flex;gap:12px;margin-top:20px">
+    <button class="btn" style="background:#fff;color:#000;padding:8px 20px;border:none;border-radius:6px;font-weight:600" onclick="restartOS()">Reiniciar</button>
+    <button class="btn" style="background:transparent;color:#fff;border:1px solid #fff;padding:8px 20px;border-radius:6px" onclick="bootSingleUser()">Modo usuario único</button>
+  </div>
+</div>
+
+<div class="fullscreen" id="recovery-screen">
+  <div style="font-size:56px">🔧</div>
+  <div style="font-size:22px">macOS Recovery</div>
+  <div class="spinner"></div>
+  <div style="font-size:13px;opacity:.7">Reparando volumen de arranque...</div>
+</div>
+
+<div class="fullscreen" id="shutdown-screen">
+  <div class="spinner"></div>
+  <div style="font-size:20px;font-weight:300" id="shutdown-text">Apagando...</div>
+</div>
+
+<div class="fullscreen" id="ransomware">
+  <h1 style="font-size:46px;margin-bottom:14px">⚠️ WANNA_MAC_CRY ⚠️</h1>
+  <p style="font-size:16px">Tus archivos han sido encriptados.</p>
+  <p style="margin:26px 0;font-size:32px;color:#ffcc00;font-weight:200">Tiempo: <span id="ransom-timer">05:00</span></p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button class="btn-danger" style="padding:12px 28px;font-size:15px" onclick="payRansom()">PAGAR 5 BTC</button>
+    <button class="btn" style="padding:12px 28px;font-size:15px;background:#10b981;border:none;color:#fff" onclick="cleanRansomware()">🛡️ Antivirus</button>
+    <button class="btn" style="padding:12px 28px;font-size:15px;background:#333;color:#fff;border:1px solid #555" onclick="kernelPanic('RANSOMWARE_SYSTEM_DESTRUCTION')">DESTRUIR</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   macOS Sonoma — port de BoxOS 11 (misma lógica, skin macOS)
+   ============================================================ */
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var fmtSize=function(n){return n<1024?n+' B':(n/1024).toFixed(1)+' KB'};
+var fmtDate=function(t){return new Date(t).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})};
+var rnd=function(a,b){return Math.floor(Math.random()*(b-a+1))+a};
+
+var audioCtx=null;
+function ac(){if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}return audioCtx}
+function beep(f,d,t,v){t=t||'sine';v=v||.05;if(!settings.sound)return;try{var c=ac();if(!c)return;var o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.setValueAtTime(f,c.currentTime);g.gain.setValueAtTime(v,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
+function playAudio(type){if(!settings.sound)return;var notes={error:[[180,.18,'sawtooth',.06],[90,.25,'sawtooth',.06]],panic:[[80,1.2,'sawtooth',.06]],beep:[[440,.08,'square',.05]],click:[[900,.03,'sine',.03]],notify:[[880,.08,'sine',.04],[1180,.09,'sine',.04]],startup:[[523,.25,'sine',.05],[659,.25,'sine',.05],[784,.25,'sine',.05],[1046,.25,'sine',.05]],shutdown:[[784,.25,'sine',.05],[659,.25,'sine',.05],[523,.25,'sine',.05],[392,.25,'sine',.05]],success:[[523,.12,'sine',.05],[784,.15,'sine',.05]],warn:[[330,.15,'square',.04],[330,.15,'square',.04]]};var seq=notes[type];if(!seq)return;seq.forEach(function(n,i){setTimeout(function(){beep(n[0],n[1],n[2],n[3])},i*130)})}
+
+var settings={sound:true,volume:70,theme:'dark',accent:'#0a84ff',wallpaper:'wp-4',username:'Usuario',password:'box',icons:{},iconLabels:{}};
+
+var damage={gpuFailed:false,audioFailed:false,networkFailed:false,fontCorrupt:false,finderDead:false,bootloaderGone:false,desktopGone:false,defenderDead:false,recoveryDead:false,printDead:false,wmiDead:false,servicesDead:false,tasksDead:false,eventsDead:false,logsDead:false,lowMem:false,overheat:false,diskWiped:false,registryCorrupt:false,groupPolicyLock:false,adminDeleted:false,updateBroken:false,netAdapterDisabled:false,dotnetRemoved:false,executionPolicyOpen:false};
+
+var vfs=null,recycleBin=[],trash=[];
+var isDiskDestroyed=false,safeMode=false;
+var _blockDialogOpen=false;
+var ransomwareActive=false,ransomwareTimer=null;
+var forkBombInterval=null,minerInterval=null,keyloggerInterval=null;
+var systemHealth=100;
+
+/* ============================================================
+   ⛔ BLOQUEO PERMANENTE
+   ============================================================ */
+function diskBlocked(){
+  if(!isDiskDestroyed)return false;
+  playAudio('error');
+  if(_blockDialogOpen){toast('Sistema inoperable','Recarga la página (⌘R).','error',3000);return true}
+  _blockDialogOpen=true;
+  showDialog({title:'Volumen inoperable',icon:'☠️',width:540,
+    message:'El volumen "Macintosh HD" ha sido destruido por completo.\n\nTodos los programas están inaccesibles de forma permanente.\n\nRecarga la página (⌘R o F5) para reinstalar macOS.',
+    buttons:[{label:'Recargar ahora',primary:true,onClick:function(){_blockDialogOpen=false;location.reload()}},{label:'Cerrar',onClick:function(){_blockDialogOpen=false}}]});
+  return true;
+}
+function killSystem(){
+  if(isDiskDestroyed)return;
+  isDiskDestroyed=true;damage.diskWiped=true;
+  try{closeAllWindows()}catch(e){}
+  try{var lp=$('#launchpad');if(lp)lp.classList.remove('open')}catch(e){}
+  document.body.classList.add('c-destroyed');
+  setTimeout(function(){try{vfs={'Macintosh HD':mkdir({})}}catch(e){}},100);
+  toast('DISCO DESTRUIDO','El volumen de arranque ha sido borrado. Todos los programas han dejado de funcionar.','error',6000);
+}
+
+/* ============================================================
+   ☠️ 70 FORMAS DE DESTRUIR macOS
+   ============================================================ */
+var DESTRUCTIONS_70=[
+/* 🥾 Arranque y kernel */
+{cat:'🥾 Arranque y kernel',n:'Corromper MBR',i:'💾',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Sobrescribir sector arranque',i:'💿',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Borrar kernel (Mach-O)',i:'📦',f:function(){deleteFromVFS('Macintosh HD/System/Library/Kernels/kernel');reactToDestruction({panic:'KERNEL_NOT_FOUND'},'kernel')}},
+{cat:'🥾 Arranque y kernel',n:'Corromper LaunchDaemons',i:'🚀',f:function(){applyEffect('kernel-panic')}},
+{cat:'🥾 Arranque y kernel',n:'Fallar boot.efi',i:'🔗',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Kernel panic manual',i:'💥',f:function(){kernelPanic('MANUAL_KERNEL_PANIC')}},
+{cat:'🥾 Arranque y kernel',n:'Kill launchd (PID 1)',i:'💀',f:function(){kernelPanic('LAUNCHD_FAILED')}},
+{cat:'🥾 Arranque y kernel',n:'Corromper Keychain',i:'🗝️',f:function(){damage.registryCorrupt=true;setTimeout(function(){kernelPanic('KEYCHAIN_CORRUPTED')},1000)}},
+{cat:'🥾 Arranque y kernel',n:'Eliminar boot.efi',i:'🥾',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Secure Boot roto',i:'🔒',f:function(){applyEffect('no-os')}},
+{cat:'🥾 Arranque y kernel',n:'Eliminar Recovery HD',i:'💽',f:function(){deleteFromVFS('Macintosh HD/Recovery');damage.recoveryDead=true}},
+{cat:'🥾 Arranque y kernel',n:'Corromper NVRAM',i:'🗝️',f:function(){kernelPanic('NVRAM_CORRUPTION')}},
+{cat:'🥾 Arranque y kernel',n:'Firmware corrupto',i:'⚙️',f:function(){kernelPanic('FIRMWARE_FAILURE')}},
+{cat:'🥾 Arranque y kernel',n:'Fallo SMC',i:'💥',f:function(){kernelPanic('SMC_FAILED')}},
+{cat:'🥾 Arranque y kernel',n:'Bucle de arranque',i:'🔄',f:function(){applyEffect('no-os')}},
+
+/* 🔧 Hardware y drivers */
+{cat:'🔧 Hardware y drivers',n:'CPU overclock extremo',i:'🔥',f:function(){applyEffect('overheat');setTimeout(function(){kernelPanic('CPU_OVERHEAT')},2000)}},
+{cat:'🔧 Hardware y drivers',n:'RAM overclock fallido',i:'🧠',f:function(){kernelPanic('MEMORY_MANAGEMENT')}},
+{cat:'🔧 Hardware y drivers',n:'GPU TDR forzado',i:'🖥️',f:function(){applyEffect('no-gpu')}},
+{cat:'🔧 Hardware y drivers',n:'Eliminar DriverStore',i:'📦',f:function(){deleteFromVFS('Macintosh HD/System/Library/Extensions');kernelPanic('IOKIT_NO_DRIVERS')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar USB',i:'🔌',f:function(){toast('USB','Todos los puertos USB deshabilitados.','error',3000)}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar teclado',i:'⌨️',f:function(){toast('Teclado','Sin respuesta.','error',3000)}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar Bluetooth',i:'📶',f:function(){toast('Bluetooth','Adaptador apagado.','warn')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar WiFi',i:'📡',f:function(){applyEffect('no-network')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar audio',i:'🔇',f:function(){applyEffect('no-audio')}},
+{cat:'🔧 Hardware y drivers',n:'Deshabilitar red',i:'🌐',f:function(){applyEffect('no-network')}},
+{cat:'🔧 Hardware y drivers',n:'Bloquear firmware',i:'🔒',f:function(){kernelPanic('FIRMWARE_LOCKED')}},
+{cat:'🔧 Hardware y drivers',n:'Secure Enclave roto',i:'🔐',f:function(){kernelPanic('SECURE_ENCLAVE_FAILED')}},
+{cat:'🔧 Hardware y drivers',n:'Memoria al 100%',i:'🧠',f:function(){damage.lowMem=true;applyDamageVisuals()}},
+{cat:'🔧 Hardware y drivers',n:'Corromper microcódigo',i:'⚙️',f:function(){kernelPanic('MACHINE_CHECK_EXCEPTION')}},
+{cat:'🔧 Hardware y drivers',n:'Fallar todos los kext',i:'💥',f:function(){kernelPanic('KEXT_LOAD_FAILED')}},
+
+/* 🔒 Red y seguridad */
+{cat:'🔒 Red y seguridad',n:'Deshabilitar firewall',i:'🔥',f:function(){toast('Firewall','Deshabilitado.','warn')}},
+{cat:'🔒 Red y seguridad',n:'Borrar reglas firewall',i:'📋',f:function(){toast('Firewall','Reglas eliminadas.','warn')}},
+{cat:'🔒 Red y seguridad',n:'Desinstalar antivirus',i:'🛡️',f:function(){applyEffect('defender-dead')}},
+{cat:'🔒 Red y seguridad',n:'Desactivar XProtect',i:'🛡️',f:function(){applyEffect('defender-dead')}},
+{cat:'🔒 Red y seguridad',n:'FileVault sin clave',i:'🔐',f:function(){killSystem()}},
+{cat:'🔒 Red y seguridad',n:'Romper Touch ID',i:'👤',f:function(){toast('Touch ID','Biometría rota.','error')}},
+{cat:'🔒 Red y seguridad',n:'Borrar credenciales',i:'🔑',f:function(){toast('Credenciales','Todas eliminadas.','error')}},
+{cat:'🔒 Red y seguridad',n:'Bloquear Keychain',i:'🗝️',f:function(){kernelPanic('SECURITY_SYSTEM_FAILURE')}},
+{cat:'🔒 Red y seguridad',n:'Tumbar iCloud',i:'🌐',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Borrar cert. raíz',i:'📜',f:function(){toast('Certificados','Todos eliminados.','error',3000)}},
+{cat:'🔒 Red y seguridad',n:'DNS blackhole',i:'🕳️',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Inundar red',i:'🌊',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Cerrar todos los puertos',i:'🚫',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Packet flood',i:'🦈',f:function(){applyEffect('no-network')}},
+{cat:'🔒 Red y seguridad',n:'Hackear VPN',i:'🔓',f:function(){applyEffect('no-network')}},
+
+/* 💾 Disco y FS */
+{cat:'💾 Disco y FS',n:'Formatear Macintosh HD',i:'💣',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Corromper APFS',i:'📁',f:function(){kernelPanic('APFS_FILESYSTEM_ERROR')}},
+{cat:'💾 Disco y FS',n:'Volumen sucio',i:'🚩',f:function(){kernelPanic('APFS_CORRUPTED')}},
+{cat:'💾 Disco y FS',n:'Comprimir todo',i:'🗜️',f:function(){damage.fontCorrupt=true;applyDamageVisuals()}},
+{cat:'💾 Disco y FS',n:'Reducir a 0 bytes',i:'📉',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Eliminar pagefile',i:'📄',f:function(){deleteFromVFS('Macintosh HD/private/var/vm/swapfile')}},
+{cat:'💾 Disco y FS',n:'Eliminar hibernación',i:'💤',f:function(){deleteFromVFS('Macintosh HD/private/var/vm/sleepimage')}},
+{cat:'💾 Disco y FS',n:'Borrar todos los logs',i:'📋',f:function(){damage.logsDead=true;applyDamageVisuals()}},
+{cat:'💾 Disco y FS',n:'Corromper Spotlight',i:'🔍',f:function(){toast('Spotlight','Índice corrupto.','warn')}},
+{cat:'💾 Disco y FS',n:'Fragmentación extrema',i:'🧩',f:function(){kernelPanic('DISK_FRAGMENTATION_FAILURE')}},
+{cat:'💾 Disco y FS',n:'Convertir a CoreStorage',i:'💽',f:function(){kernelPanic('CORESTORAGE_FAILURE')}},
+{cat:'💾 Disco y FS',n:'Quitar volumen de arranque',i:'🔠',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Montar volumen vacío',i:'📂',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Sobrescribir con ceros',i:'0️⃣',f:function(){killSystem()}},
+{cat:'💾 Disco y FS',n:'Cifrar sin clave',i:'🔐',f:function(){killSystem()}},
+
+/* 🌪️ Caos */
+{cat:'🌪️ Caos aleatorio',n:'Corromper fuentes',i:'🔤',f:function(){applyEffect('corrupt-text')}},
+{cat:'🌪️ Caos aleatorio',n:'Locale corrupto',i:'🌐',f:function(){applyEffect('corrupt-text')}},
+{cat:'🌪️ Caos aleatorio',n:'Desincronizar reloj',i:'⏰',f:function(){toast('Reloj','Hora desincronizada.','warn')}},
+{cat:'🌪️ Caos aleatorio',n:'Codificación rota',i:'🔡',f:function(){applyEffect('corrupt-text')}},
+{cat:'🌪️ Caos aleatorio',n:'Cursor gigante',i:'🖱️',f:function(){document.body.style.cursor='crosshair'}},
+{cat:'🌪️ Caos aleatorio',n:'Pantalla invertida',i:'🖥️',f:function(){document.documentElement.style.filter='invert(1) hue-rotate(180deg)';setTimeout(function(){document.documentElement.style.filter=''},5000)}},
+{cat:'🌪️ Caos aleatorio',n:'Alto contraste',i:'🎨',f:function(){damage.gpuFailed=true;applyDamageVisuals()}},
+{cat:'🌪️ Caos aleatorio',n:'Narrador constante',i:'🔊',f:function(){var iv=setInterval(function(){toast('Narrador','Leyendo pantalla...','info',1500)},3000);setTimeout(function(){clearInterval(iv)},15000)}},
+{cat:'🌪️ Caos aleatorio',n:'Beachball eterno',i:'🌊',f:function(){triggerBeachball(9999999)}},
+{cat:'🌪️ Caos aleatorio',n:'Bucle de reinicio',i:'🔄',f:function(){applyEffect('no-os')}}
+];
+
+/* VFS */
+function mkfile(c){return{type:'file',content:String(c||''),modified:Date.now(),size:String(c||'').length}}
+function mkdir(ch){return{type:'dir',content:ch||{},modified:Date.now()}}
+function createVFS(){
+  return {'Macintosh HD':mkdir({
+    'Applications':mkdir({
+      'Finder.app':mkdir({}),'Safari.app':mkdir({}),'Terminal.app':mkdir({}),
+      'App Store.app':mkdir({}),'Notas.app':mkdir({}),'Calculadora.app':mkdir({})
+    }),
+    'Library':mkdir({
+      'LaunchDaemons':mkdir({'com.apple.xpc.launchd.plist':mkfile('plist')}),
+      'Extensions':mkdir({'AppleHDA.kext':mkdir({}),'IO80211Family.kext':mkdir({})}),
+      'Fonts':mkdir({'Helvetica.ttc':mkfile('font')}),
+      'Frameworks':mkdir({}),
+      'Keychains':mkdir({'login.keychain-db':mkfile('keychain')})
+    }),
+    'System':mkdir({
+      'Library':mkdir({
+        'Kernels':mkdir({'kernel':mkfile('Mach-O kernel')}),
+        'CoreServices':mkdir({'Finder.app':mkdir({}),'Dock.app':mkdir({}),'loginwindow.app':mkdir({})}),
+        'Extensions':mkdir({'AppleAPIC.kext':mkdir({})}),
+        'Frameworks':mkdir({'CoreFoundation.framework':mkdir({})}),
+        'LaunchDaemons':mkdir({'com.apple.launchd.plist':mkfile('plist')}),
+        'PrivateFrameworks':mkdir({}),
+        'Drivers':mkdir({}),
+        'Logging':mkdir({})
+      })
+    }),
+    'Users':mkdir({
+      'Usuario':mkdir({
+        'Desktop':mkdir({'Bienvenido.txt':mkfile('Bienvenido a macOS Sonoma ☠️\n\nPort de BoxOS 11.\nMismas 70 destrucciones.')}),
+        'Documents':mkdir({'informe.pages':mkfile('...')}),
+        'Downloads':mkdir({}),
+        'Pictures':mkdir({'wallpaper.jpg':mkfile('jpg')}),
+        'Library':mkdir({'Preferences':mkdir({}),'Caches':mkdir({}),'Application Support':mkdir({})})
+      }),
+      'Shared':mkdir({})
+    }),
+    'private':mkdir({
+      'etc':mkdir({'hosts':mkfile('127.0.0.1 localhost'),'passwd':mkfile('root:*:0:0:root:/root:/bin/sh'),'sudoers':mkfile('...')}),
+      'var':mkdir({'db':mkdir({}),'log':mkdir({}),'tmp':mkdir({}),'vm':mkdir({'swapfile':mkfile('swap'),'sleepimage':mkfile('hibernate')})})
+    }),
+    'usr':mkdir({
+      'lib':mkdir({'dyld':mkfile('Mach-O'),'libSystem.B.dylib':mkfile('dylib'),'system':mkdir({})}),
+      'bin':mkdir({'bash':mkfile('Mach-O'),'zsh':mkfile('Mach-O')}),
+      'sbin':mkdir({}),
+      'share':mkdir({}),
+      'local':mkdir({})
+    }),
+    'bin':mkdir({'sh':mkfile('Mach-O')}),
+    'sbin':mkdir({}),
+    'opt':mkdir({}),
+    'Volumes':mkdir({'Macintosh HD':mkdir({})}),
+    'Recovery':mkdir({'WinRE.wim':mkfile('Recovery')}),
+    'README.txt':mkfile('macOS Sonoma · Ultra Destructible · Port de BoxOS 11')
+  })};
+}
+function splitPath(p){return String(p).split('/').filter(Boolean)}
+function getNode(path){
+  if(isDiskDestroyed)return null;
+  var parts=splitPath(path);if(!parts.length)return null;
+  var node=vfs[parts[0]];if(!node)return null;
+  for(var i=1;i<parts.length;i++){if(node.type!=='dir'||!node.content[parts[i]])return null;node=node.content[parts[i]]}
+  return node;
+}
+function getParentPath(p){var a=splitPath(p);a.pop();return a.join('/')||'Macintosh HD'}
+function joinPath(a,b){return a.replace(/\/$/,'')+'/'+b}
+
+function deleteFromVFS(canonical){
+  var parts=canonical.split('/').filter(Boolean);
+  if(!parts.length)return false;
+  var candidates=[parts];
+  if(parts[0]!=='Macintosh HD')candidates.push(['Macintosh HD'].concat(parts));
+  for(var c=0;c<candidates.length;c++){
+    var node=vfs;
+    for(var i=0;i<candidates[c].length;i++){
+      if(node.type==='dir'&&node.content[candidates[c][i]])node=node.content[candidates[c][i]];
+      else{node=null;break}
+    }
+    if(node){
+      var parent=vfs;
+      for(var k=0;k<candidates[c].length-1;k++)parent=parent.content[candidates[c][k]];
+      delete parent.content[candidates[c][candidates[c].length-1]];
+      return true;
+    }
+  }
+  return false;
+}
+
+var CRITICAL_FILES={
+  'Macintosh HD/System/Library/Kernels/kernel':{panic:'KERNEL_NOT_FOUND'},
+  'Macintosh HD/System/Library/CoreServices/Finder.app':{effect:'no-finder'},
+  'Macintosh HD/System/Library/CoreServices/Dock.app':{effect:'no-finder'},
+  'Macintosh HD/System/Library/CoreServices/loginwindow.app':{panic:'LOGINWINDOW_FAILED'},
+  'Macintosh HD/System/Library/LaunchDaemons/com.apple.launchd.plist':{panic:'LAUNCHD_FAILED'},
+  'Macintosh HD/System/Library/Extensions/AppleAPIC.kext':{panic:'IOAPIC_FAILED'},
+  'Macintosh HD/Library/LaunchDaemons/com.apple.xpc.launchd.plist':{panic:'LAUNCHD_FAILED'},
+  'Macintosh HD/usr/lib/dyld':{panic:'DYLD_FAILED'},
+  'Macintosh HD/usr/lib/libSystem.B.dylib':{panic:'LIBSYSTEM_FAILED'},
+  'Macintosh HD/System/Library/Frameworks/CoreFoundation.framework':{panic:'CORE_SERVICES_FAILED'},
+  'Macintosh HD/private/etc/passwd':{panic:'SECURITY_FAILURE'},
+  'Macintosh HD/private/etc/sudoers':{panic:'SECURITY_FAILURE'},
+  'Macintosh HD/Library/Keychains/login.keychain-db':{warning:true}
+};
+var PROTECTED_PATHS={
+  'Macintosh HD':{panic:'DISK_UNMOUNTED',killsSystem:true},
+  'Macintosh HD/System':{panic:'SYSTEM_VOLUME_DESTROYED',killsSystem:true},
+  'Macintosh HD/System/Library':{panic:'SYSTEM_LIBRARY_DESTROYED',killsSystem:true},
+  'Macintosh HD/Applications':{warning:true},
+  'Macintosh HD/Users':{inUse:true},
+  'Macintosh HD/Users/Usuario':{inUse:true},
+  'Macintosh HD/private':{panic:'PRIVATE_DESTROYED',killsSystem:true}
+};
+
+var APPS={
+  finder:{name:'Finder',icon:'😊',run:function(){openFinder('Macintosh HD/Users/Usuario')}},
+  launchpad:{name:'Launchpad',icon:'🚀',run:function(){toggleLaunchpad()}},
+  safari:{name:'Safari',icon:'🧭',run:function(){openSafari()}},
+  mail:{name:'Correo',icon:'✉️',run:function(){openMail()}},
+  notes:{name:'Notas',icon:'📝',run:function(){openNotes()}},
+  music:{name:'Música',icon:'🎵',run:function(){openMusic()}},
+  photos:{name:'Fotos',icon:'🖼️',run:function(){openPhotos()}},
+  terminal:{name:'Terminal',icon:'⬛',run:function(){openTerminal()}},
+  calc:{name:'Calculadora',icon:'🧮',run:function(){openCalculator()}},
+  settings:{name:'Ajustes del Sistema',icon:'⚙️',run:function(){openSettings()}},
+  activity:{name:'Monitor de Actividad',icon:'📊',run:function(){openActivityMonitor()}},
+  disk:{name:'Utilidad de Discos',icon:'💽',run:function(){openDiskUtility()}},
+  console:{name:'Consola',icon:'📋',run:function(){openConsole()}},
+  keychain:{name:'Acceso a Llaveros',icon:'🔑',run:function(){openKeychain()}},
+  trash:{name:'Papelera',icon:'🗑️',run:function(){openTrash()}},
+  destroy:{name:'Centro de Destrucción',icon:'☠️',run:function(){openDestructionCenter()}}
+};
+var DESKTOP_ICONS=[
+  {id:'macintosh',label:'Macintosh HD',icon:'💽',run:function(){openFinder('Macintosh HD')}},
+  {id:'userfolder',label:'Usuario',icon:'🏠',run:function(){openFinder('Macintosh HD/Users/Usuario')}},
+  {id:'destroy',label:'Centro Destrucción',icon:'☠️',run:function(){openDestructionCenter()}}
+];
+
+/* WM */
+var zTop=100,winCounter=0,activeWin=null,openWindows={},finderStates={};
+function createWindow(opts){
+  var o={};for(var k in opts)o[k]=opts[k];
+  var appId=o.appId;
+  if(isDiskDestroyed&&appId&&appId!=='dialog'){diskBlocked();return 'win-blocked'}
+  if(!o.title)o.title='Ventana';if(!o.icon)o.icon='🪟';if(!o.body)o.body='';
+  if(!o.width)o.width=680;if(!o.height)o.height=440;
+  if(o.resizable===undefined)o.resizable=true;if(o.autoHeight===undefined)o.autoHeight=false;
+  if(!o.appId)o.appId='app';if(o.noPad===undefined)o.noPad=false;
+  var id='win-'+(++winCounter);
+  var el=document.createElement('div');
+  el.className='window opening';el.id=id;el.dataset.app=o.appId;
+  var w=Math.min(o.width,innerWidth-30);
+  el.style.width=w+'px';
+  el.style.height=o.autoHeight?'auto':Math.min(o.height,innerHeight-110)+'px';
+  var off=(winCounter%7)*24;
+  el.style.left=Math.max(10,Math.round((innerWidth-w)/2)-60+off)+'px';
+  el.style.top=Math.max(34,60+off)+'px';
+  el.style.zIndex=++zTop;
+  el.innerHTML='<div class="window-header"><div class="traffic"><div class="tl tl-close" data-win="close"><span>✕</span></div><div class="tl tl-min" data-win="min"><span>−</span></div><div class="tl tl-max" data-win="max"><span>+</span></div></div><div class="window-title">'+esc(o.title)+'</div></div><div class="window-body'+(o.noPad?' no-pad':'')+'"></div>'+((o.resizable&&!o.autoHeight)?'<div class="rz rz-se"></div><div class="rz rz-e"></div><div class="rz rz-s"></div>':'');
+  $('.window-body',el).innerHTML=o.body;
+  document.body.appendChild(el);
+  openWindows[id]={el:el,opts:o,min:false,max:false,prev:null};
+  addDockIndicator(id);wireWindow(id);focusWindow(id);
+  el.addEventListener('animationend',function(){el.classList.remove('opening')},{once:true});
+  return id;
+}
+function addDockIndicator(id){var w=openWindows[id];if(!w)return;var di=$('.dock-item[data-appid="'+w.opts.appId+'"]');if(di)di.classList.add('running')}
+function wireWindow(id){
+  var w=openWindows[id];if(!w)return;var el=w.el;
+  $$('[data-win]',el).forEach(function(b){b.onclick=function(e){e.stopPropagation();var a=b.dataset.win;if(a==='close')closeWindow(id);else if(a==='min')minimizeWindow(id);else if(a==='max')toggleMaximize(id)}});
+  el.addEventListener('mousedown',function(){focusWindow(id)},true);
+  var header=$('.window-header',el);
+  header.addEventListener('pointerdown',function(e){
+    if(e.target.closest('[data-win]'))return;if(w.max)return;
+    e.preventDefault();focusWindow(id);
+    var sx=e.clientX,sy=e.clientY,ox=el.offsetLeft,oy=el.offsetTop;
+    var move=function(ev){el.style.left=(ox+ev.clientX-sx)+'px';el.style.top=Math.max(24,oy+ev.clientY-sy)+'px'};
+    var up=function(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up)};
+    document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+  });
+  header.addEventListener('dblclick',function(e){if(e.target.closest('[data-win]'))return;toggleMaximize(id)});
+  $$('.rz',el).forEach(function(h){
+    h.addEventListener('pointerdown',function(e){
+      e.preventDefault();e.stopPropagation();focusWindow(id);
+      var dir=h.classList.contains('rz-se')?'se':h.classList.contains('rz-e')?'e':'s';
+      var sx=e.clientX,sy=e.clientY,sw=el.offsetWidth,sh=el.offsetHeight;
+      var move=function(ev){if(dir.indexOf('e')>-1)el.style.width=Math.max(340,sw+ev.clientX-sx)+'px';if(dir.indexOf('s')>-1)el.style.height=Math.max(200,sh+ev.clientY-sy)+'px'};
+      var up=function(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up)};
+      document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+    });
+  });
+}
+function focusWindow(id){var w=openWindows[id];if(!w)return;if(w.min)restoreWindow(id,true);w.el.style.zIndex=++zTop;$$('.window').forEach(function(e){e.classList.remove('focused')});w.el.classList.add('focused');activeWin=id;var an=$('#mb-appname');if(an)an.textContent=w.opts.title}
+function minimizeWindow(id){var w=openWindows[id];if(!w||w.min)return;w.min=true;w.el.style.display='none';if(activeWin===id)activeWin=null}
+function restoreWindow(id,silent){var w=openWindows[id];if(!w)return;w.min=false;w.el.style.display='flex';if(!silent){w.el.style.zIndex=++zTop;activeWin=id}}
+function toggleMaximize(id){var w=openWindows[id];if(!w)return;var el=w.el;if(!w.max){w.prev={left:el.style.left,top:el.style.top,width:el.style.width,height:el.style.height};el.style.left='0';el.style.top='24px';el.style.width='100%';el.style.height=(innerHeight-24)+'px';el.classList.add('maximized');w.max=true}else{el.style.left=w.prev.left;el.style.top=w.prev.top;el.style.width=w.prev.width;el.style.height=w.prev.height;el.classList.remove('maximized');w.max=false}}
+function closeWindow(id){var w=openWindows[id];if(!w)return;if(w.opts.appId==='finder')delete finderStates[id];w.el.remove();delete openWindows[id];if(activeWin===id)activeWin=null;var stillOpen=Object.keys(openWindows).some(function(k){return openWindows[k].opts.appId===w.opts.appId});if(!stillOpen){var di=$('.dock-item[data-appid="'+w.opts.appId+'"]');if(di)di.classList.remove('running')}var an=$('#mb-appname');if(an)an.textContent='Finder'}
+function closeAllWindows(){Object.keys(openWindows).forEach(function(id){closeWindow(id)})}
+
+function renderDock(){
+  var d=$('#dock');if(!d)return;
+  var order=['finder','launchpad','safari','mail','notes','music','photos','terminal','calc','settings','activity','disk','console','keychain','destroy'];
+  d.innerHTML=order.map(function(k){var a=APPS[k];return '<div class="dock-item" data-appid="'+k+'" title="'+esc(a.name)+'" onclick="dockClick(\''+k+'\')">'+a.icon+'<span class="dock-label">'+esc(a.name)+'</span></div>'}).join('')+'<div class="dock-sep"></div><div class="dock-item" onclick="openTrash()" title="Papelera">🗑️<span class="dock-label">Papelera</span></div>';
+}
+function dockClick(k){playAudio('click');APPS[k].run()}
+
+function defaultIconPos(i){var col=Math.floor(i/7),row=i%7;return{x:20+col*100,y:20+row*100}}
+function renderDesktopIcons(){
+  var d=$('#desktop');if(!d)return;
+  $$('.desktop-icon',d).forEach(function(e){e.remove()});
+  DESKTOP_ICONS.forEach(function(ic,i){
+    var pos=settings.icons[ic.id]||defaultIconPos(i);
+    var el=document.createElement('div');
+    el.className='desktop-icon';el.dataset.id=ic.id;
+    el.style.left=pos.x+'px';el.style.top=pos.y+'px';
+    var label=settings.iconLabels[ic.id]||ic.label;
+    el.innerHTML='<div class="icon-img">'+ic.icon+'</div><div class="icon-label">'+esc(label)+'</div>';
+    el.addEventListener('mousedown',function(e){e.stopPropagation();$$('.desktop-icon').forEach(function(x){x.classList.remove('selected')});el.classList.add('selected');startIconDrag(e,el,ic)});
+    el.addEventListener('dblclick',function(){playAudio('click');ic.run()});
+    d.appendChild(el);
+  });
+}
+function startIconDrag(e,el,ic){
+  if(e.button!==0)return;
+  var sx=e.clientX,sy=e.clientY,ox=parseInt(el.style.left,10),oy=parseInt(el.style.top,10),moved=false;
+  var move=function(ev){var dx=ev.clientX-sx,dy=ev.clientY-sy;if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;if(!moved)return;el.style.left=Math.max(0,Math.min(innerWidth-100,ox+dx))+'px';el.style.top=Math.max(24,Math.min(innerHeight-150,oy+dy))+'px'};
+  var up=function(){document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);if(moved)settings.icons[ic.id]={x:parseInt(el.style.left,10),y:parseInt(el.style.top,10)}};
+  document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);
+}
+
+function toast(title,msg,type,timeout){
+  msg=msg||'';type=type||'info';timeout=timeout||4500;
+  var c=$('#notifications');
+  var el=document.createElement('div');
+  el.className='toast '+(type==='error'?'err':type==='ok'?'ok':type==='warn'?'warn':'');
+  var icon=type==='error'?'⚠️':type==='ok'?'✅':type==='warn'?'⚠️':'ℹ️';
+  el.innerHTML='<div class="toast-title">'+icon+' '+esc(title)+'</div>'+(msg?'<div class="toast-msg">'+esc(msg)+'</div>':'');
+  c.appendChild(el);
+  setTimeout(function(){el.classList.add('out');setTimeout(function(){el.remove()},320)},timeout);
+  playAudio(type==='error'?'warn':'notify');
+}
+function showDialog(opts){
+  opts=opts||{};
+  var buttons=opts.buttons||[{label:'OK',primary:true}];
+  var id=createWindow({title:opts.title||'macOS',icon:opts.icon||'ℹ️',width:opts.width||460,autoHeight:true,resizable:false,appId:'dialog',
+    body:'<div style="font-size:13.5px;line-height:1.55;white-space:pre-wrap">'+esc(opts.message||'')+'</div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">'+
+    buttons.map(function(b,i){return '<button class="btn '+(b.primary?'btn-primary':'')+'" data-dlg="'+i+'">'+esc(b.label)+'</button>'}).join('')+'</div>'});
+  var el=document.getElementById(id);if(!el)return id;
+  $$('[data-dlg]',el).forEach(function(b){b.onclick=function(){var o=buttons[+b.dataset.dlg];closeWindow(id);if(o&&o.onClick)o.onClick()}});
+  return id;
+}
+
+/* FINDER */
+function openFinder(path){
+  if(isDiskDestroyed){diskBlocked();return}
+  path=path||'Macintosh HD/Users/Usuario';
+  var existing=null;
+  Object.keys(openWindows).forEach(function(wid){if(openWindows[wid].opts.appId==='finder'&&finderStates[wid]){navigateFinder(wid,path);focusWindow(wid);existing=wid}});
+  if(existing)return existing;
+  var id=createWindow({title:'Finder',icon:'😊',width:820,height:520,appId:'finder',noPad:true,
+    body:'<div class="finder-wrap"><div class="finder-sidebar" id="fsb-'+id+'"></div><div class="finder-main"><div class="finder-toolbar"><button class="btn" data-fnav="back">◀</button><button class="btn" data-fnav="up">▲</button><div class="finder-path"></div></div><div class="finder-list"></div><div class="finder-status"></div></div></div>'});
+  var el=document.getElementById(id);if(!el)return id;
+  finderStates[id]={path:path,history:[path],hIndex:0};
+  wireFinder(id);renderFinder(id);
+  return id;
+}
+function wireFinder(id){
+  var el=document.getElementById(id);if(!el)return;
+  var st=finderStates[id];if(!st)return;
+  el.addEventListener('click',function(e){
+    var nav=e.target.closest('[data-fnav]');
+    if(nav){
+      var a=nav.dataset.fnav;
+      if(a==='back'&&st.hIndex>0){st.hIndex--;st.path=st.history[st.hIndex];renderFinder(id)}
+      if(a==='up'){var p=getParentPath(st.path);if(p!==st.path)navigateFinder(id,p)}
+      return;
+    }
+    var sb=e.target.closest('.finder-item[data-path]');
+    if(sb){navigateFinder(id,sb.dataset.path);return}
+    var act=e.target.closest('[data-fact]');
+    if(act){
+      var name=act.dataset.fname,full=joinPath(st.path,name);
+      if(act.dataset.fact==='del'){deleteFromFinder(full,id);e.stopPropagation()}
+      return;
+    }
+    var row=e.target.closest('.finder-row');
+    if(row){$$('.finder-row',el).forEach(function(r){r.classList.remove('sel')});row.classList.add('sel')}
+  });
+  el.addEventListener('dblclick',function(e){
+    var row=e.target.closest('.finder-row');
+    if(!row)return;
+    var full=joinPath(st.path,row.dataset.name);
+    var node=getNode(full);if(!node)return;
+    if(node.type==='dir')navigateFinder(id,full);
+    else if(full.match(/\.txt$/))openNotes(full,node.content);
+    else toast('Finder','Sin app asociada','warn',1800);
+  });
+}
+function navigateFinder(id,path){var st=finderStates[id];if(!st)return;st.path=path;st.history=st.history.slice(0,st.hIndex+1);st.history.push(path);st.hIndex=st.history.length-1;renderFinder(id)}
+function renderFinder(id){
+  var el=document.getElementById(id);if(!el)return;
+  var st=finderStates[id];if(!st)return;
+  var sb=$('#fsb-'+id);
+  if(sb)sb.innerHTML='<div class="finder-section">Favoritos</div><div class="finder-item" data-path="Macintosh HD"><span>💽</span><span>Macintosh HD</span></div><div class="finder-item" data-path="Macintosh HD/Users/Usuario/Desktop"><span>🖥️</span><span>Escritorio</span></div><div class="finder-item" data-path="Macintosh HD/Users/Usuario/Documents"><span>📄</span><span>Documentos</span></div><div class="finder-item" data-path="Macintosh HD/Users/Usuario/Downloads"><span>⬇️</span><span>Descargas</span></div><div class="finder-section">Ubicaciones</div><div class="finder-item" data-path="Macintosh HD/Applications"><span>📱</span><span>Aplicaciones</span></div><div class="finder-item" data-path="Macintosh HD/System"><span>⚙️</span><span>Sistema</span></div><div class="finder-item" data-path="Macintosh HD/Library"><span>📚</span><span>Library</span></div><div class="finder-item" data-path="Macintosh HD/private/etc"><span>🔧</span><span>/etc</span></div><div class="finder-item" data-path="Macintosh HD/usr/lib"><span>📦</span><span>/usr/lib</span></div>';
+  $$('.finder-item[data-path]',sb).forEach(function(it){if(it.dataset.path===st.path)it.classList.add('active')});
+  var p=$('.finder-path',el);if(p)p.textContent='/'+st.path.replace('Macintosh HD','');
+  if(isDiskDestroyed){var l=$('.finder-list',el);if(l)l.innerHTML='<div style="padding:80px 20px;text-align:center;color:var(--text-dim)"><div style="font-size:72px;margin-bottom:14px">💀</div><div style="font-size:15px;font-weight:600;color:var(--danger)">El volumen fue destruido</div></div>';var s=$('.finder-status',el);if(s)s.textContent='Error · Volumen no montado';return}
+  var node=getNode(st.path);
+  if(!node||node.type!=='dir'){var l2=$('.finder-list',el);if(l2)l2.innerHTML='<div style="padding:20px;color:var(--text-dim)">Carpeta no disponible.</div>';return}
+  var items=Object.keys(node.content).map(function(name){var it=node.content[name];return{name:name,type:it.type,size:it.type==='file'?(it.size||0):0,modified:it.modified||Date.now()}});
+  items.sort(function(a,b){if(a.type!==b.type)return a.type==='dir'?-1:1;return a.name.localeCompare(b.name)});
+  var list=$('.finder-list',el);
+  list.innerHTML=items.map(function(i){
+    var icon=i.type==='dir'?'📁':(i.name.match(/\.app$/)?'📱':i.name.match(/\.txt$/)?'📄':i.name.match(/\.kext$/)?'🧩':'📄');
+    return '<div class="finder-row" data-name="'+esc(i.name)+'"><div class="fr-icon">'+icon+'</div><div class="fr-name">'+esc(i.name)+'</div><div class="fr-size">'+(i.type==='dir'?'--':fmtSize(i.size))+'</div><div class="fr-date">'+fmtDate(i.modified)+'</div><button class="btn fr-act" data-fact="del" data-fname="'+esc(i.name)+'">🗑️</button></div>';
+  }).join('')||'<div style="padding:20px;color:var(--text-dim)">Vacío</div>';
+  var stat=$('.finder-status',el);if(stat)stat.textContent=items.length+' elementos';
+}
+function deleteFromFinder(full,id){
+  var parts=splitPath(full);var name=parts.pop();
+  var parentPath=parts.join('/')||'Macintosh HD';
+  var p=getNode(parentPath);if(!p||!p.content[name])return;
+  var normalized=parts[0]==='Macintosh HD'?parts.join('/')+'/'+name:'Macintosh HD/'+parts.slice(1).join('/')+'/'+name;
+  var found=null;
+  Object.keys(CRITICAL_FILES).forEach(function(k){if(k===normalized)found={key:k,reaction:CRITICAL_FILES[k]}});
+  if(found){deleteFromVFS(found.key);if(id)renderFinder(id);reactToDestruction(found.reaction,found.key);return}
+  var found2=null;
+  Object.keys(PROTECTED_PATHS).forEach(function(k){if(k===normalized)found2={key:k,reaction:PROTECTED_PATHS[k]}});
+  if(found2){
+    var r=found2.reaction;
+    if(r.inUse){playAudio('error');showDialog({title:'No se puede eliminar',icon:'⚠️',message:'"'+name+'" está en uso.'});return}
+    deleteFromVFS(found2.key);if(id)renderFinder(id);reactToDestruction(r,found2.key);return;
+  }
+  trash.push({path:full,data:p.content[name],deletedAt:Date.now()});
+  delete p.content[name];
+  if(id)renderFinder(id);
+  toast('Finder',name+' → Papelera','warn',1800);
+}
+function reactToDestruction(reaction,path){
+  var sn=path.split('/').pop();
+  if(reaction.killsSystem){playAudio('error');toast('Destrucción total','Se eliminó "'+sn+'". El sistema queda inoperable.','error',4500);setTimeout(killSystem,400);setTimeout(function(){kernelPanic(reaction.panic||'CRITICAL_PROCESS_DIED')},1300);return}
+  if(reaction.panic){playAudio('error');toast('Error crítico','Se eliminó "'+sn+'".','error',3500);setTimeout(function(){kernelPanic(reaction.panic)},900);return}
+  if(reaction.effect){applyEffect(reaction.effect);toast('Componente eliminado',sn,'error',3500);return}
+  if(reaction.warning){toast('Advertencia','Se eliminó '+sn,'warn',4000);return}
+  toast('Eliminado',sn,'warn',2000);
+}
+function applyEffect(effect){
+  if(effect==='no-finder'){damage.finderDead=true;closeAllWindows();applyDamageVisuals();return}
+  if(effect==='corrupt-text'){damage.fontCorrupt=true;applyDamageVisuals();return}
+  if(effect==='no-gpu'){damage.gpuFailed=true;applyDamageVisuals();setTimeout(function(){kernelPanic('GPU_TDR_FAILURE')},2200);return}
+  if(effect==='no-audio'){damage.audioFailed=true;settings.sound=false;applySettings();return}
+  if(effect==='no-network'){damage.networkFailed=true;applyDamageVisuals();return}
+  if(effect==='no-os'){damage.bootloaderGone=true;setTimeout(showNoOS,1200);return}
+  if(effect==='defender-dead'){damage.defenderDead=true;return}
+  if(effect==='overheat'){damage.overheat=true;applyDamageVisuals();return}
+  if(effect==='kernel-panic'){setTimeout(function(){kernelPanic('LAUNCHD_FAILED')},1000);return}
+}
+function applyDamageVisuals(){
+  document.body.classList.toggle('no-finder',damage.finderDead);
+  document.body.classList.toggle('corrupt-text',damage.fontCorrupt);
+  document.body.classList.toggle('no-gpu',damage.gpuFailed);
+  document.body.classList.toggle('no-audio',damage.audioFailed);
+  document.body.classList.toggle('no-network',damage.networkFailed);
+  document.body.classList.toggle('low-mem',damage.lowMem);
+  document.body.classList.toggle('overheat',damage.overheat);
+  document.body.classList.toggle('c-destroyed',isDiskDestroyed);
+  document.body.classList.toggle('safe-mode',safeMode);
+}
+
+/* TERMINAL */
+function openTerminal(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var cwd='/Users/Usuario';
+  var id=createWindow({title:'Terminal — zsh',icon:'⬛',width:720,height:440,appId:'terminal',noPad:true,
+    body:'<div class="terminal-body"><div class="terminal-output">Last login: '+new Date().toLocaleString()+'\nType "help" for commands.\n</div><div class="terminal-line"><span class="terminal-prompt">usuario@MacBook '+cwd+' % </span><input class="terminal-input" autofocus></div></div>'});
+  var el=document.getElementById(id);if(!el)return id;
+  var input=$('.terminal-input',el),output=$('.terminal-output',el),prompt=$('.terminal-prompt',el);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'){var cmd=input.value.trim();output.textContent+=prompt.textContent+cmd+'\n';input.value='';execCmd(cmd,output);output.scrollTop=output.scrollHeight}});
+  return id;
+}
+function execCmd(cmdStr,output){
+  var parts=cmdStr.split(/\s+/).filter(Boolean);if(!parts.length)return;
+  var cmd=parts[0],args=parts.slice(1),full=parts.join(' ').toLowerCase();
+  if(cmd==='help'){output.textContent+='Commands: help, clear, ls, pwd, cat, rm, sudo, diskutil, csrutil, nvram, launchctl, killall, shutdown, reboot, dmesg, sysctl, kextunload, panic, beachball, matrix\n\n'}
+  else if(cmd==='clear'){output.textContent=''}
+  else if(cmd==='pwd'){output.textContent+='/Users/Usuario\n\n'}
+  else if(cmd==='ls'){var n=getNode('Macintosh HD/Users/Usuario');if(n&&n.type==='dir')output.textContent+=Object.keys(n.content).join('  ')+'\n\n';else output.textContent+='\n'}
+  else if(cmd==='whoami'){output.textContent+='usuario\n\n'}
+  else if(cmd==='uname'){output.textContent+='Darwin MacBook.local 23.4.0 Darwin Kernel Version 23.4.0 arm64\n\n'}
+  else if(cmd==='sudo'){
+    var sub=args.join(' ').toLowerCase();
+    if(sub==='rm -rf /'||sub==='rm -rf /system'||sub==='rm -rf /system/*'){output.textContent+='Removing system files...\n';setTimeout(killSystem,900)}
+    else if(sub.indexOf('diskutil')>-1){output.textContent+='Erasing disk...\n';setTimeout(killSystem,1200)}
+    else if(sub.indexOf('csrutil disable')>-1){output.textContent+='System Integrity Protection status: disabled.\n'}
+    else if(sub.indexOf('nvram')>-1&&sub.indexOf('delete')>-1){output.textContent+='NVRAM cleared.\n';setTimeout(function(){kernelPanic('NVRAM_CLEARED')},1000)}
+    else if(sub.indexOf('killall')>-1&&(sub.indexOf('launchd')>-1||sub.indexOf('kernel_task')>-1||sub.indexOf('windowserver')>-1)){output.textContent+='Killing system process...\n';setTimeout(function(){kernelPanic('CRITICAL_PROCESS_KILLED')},900)}
+    else output.textContent+='Command accepted.\n\n';
+  }
+  else if(cmd==='rm'){
+    if(full.indexOf('rm -rf /')>-1){output.textContent+='rm: removing all files...\n';setTimeout(killSystem,900)}
+    else if(args.length){var target=args[args.length-1];if(target.match(/^\/System/)||target.match(/^\/usr\/lib/)||target.match(/^\/private/)){output.textContent+='Removing '+target+'...\n';var cfKey='Macintosh HD'+target;if(CRITICAL_FILES[cfKey])setTimeout(function(){reactToDestruction(CRITICAL_FILES[cfKey],cfKey)},500);else setTimeout(function(){kernelPanic('SYSTEM_FILES_DELETED')},800)}else output.textContent+='rm: '+target+': No such file or directory\n\n'}
+  }
+  else if(cmd==='diskutil'){if(full.indexOf('erase')>-1||full.indexOf('reformat')>-1){output.textContent+='Erasing volume...\n';setTimeout(killSystem,1400)}else output.textContent+='diskutil: usage\n\n'}
+  else if(cmd==='csrutil'){output.textContent+='SIP status: enabled\n\n'}
+  else if(cmd==='nvram'){output.textContent+='boot-args: -v\n\n'}
+  else if(cmd==='launchctl'){output.textContent+='launchd: operation failed\n\n';setTimeout(function(){kernelPanic('LAUNCHD_FAULT')},1200)}
+  else if(cmd==='killall'){var t=args[0]||'';if(t==='kernel_task'||t==='launchd'||t==='WindowServer'){setTimeout(function(){kernelPanic('CRITICAL_PROCESS_KILLED')},800);output.textContent+='killing '+t+'...\n'}else output.textContent+='No matching processes\n\n'}
+  else if(cmd==='panic'){output.textContent+='Triggering panic...\n';setTimeout(function(){kernelPanic('MANUAL_USER_PANIC')},600)}
+  else if(cmd==='beachball'){output.textContent+='Spinning up beachball...\n';triggerBeachball(8000)}
+  else if(cmd==='shutdown'){output.textContent+='Shutting down...\n';setTimeout(restartOS,900)}
+  else if(cmd==='reboot'){output.textContent+='Rebooting...\n';setTimeout(restartOS,900)}
+  else if(cmd==='dmesg'){output.textContent+='kernel: [0.000] Boot successful\nkernel: [5.102] All systems nominal\n\n'}
+  else if(cmd==='sysctl'){output.textContent+='kern.ostype: Darwin\nkern.osrelease: 23.4.0\n\n'}
+  else if(cmd==='matrix'){output.textContent+='0101010101010101010101010101\n1010101010101010101010101010\n'}
+  else output.textContent+='zsh: command not found: '+cmd+'\n\n';
+}
+
+/* NOTAS */
+function openNotes(path,content){
+  if(isDiskDestroyed){diskBlocked();return}
+  var id=createWindow({title:path?'Notas — '+path.split('/').pop():'Notas',icon:'📝',width:560,height:400,appId:'notes',
+    body:'<textarea style="width:100%;height:100%;background:transparent;color:var(--text);border:none;outline:none;resize:none;font-size:13.5px;line-height:1.6;font-family:-apple-system;padding:8px">'+(content||'').replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c]})+'</textarea>'});
+  var el=document.getElementById(id);if(!el)return id;
+  $('textarea',el).addEventListener('keydown',function(e){e.stopPropagation()});
+  return id;
+}
+
+/* CALCULADORA */
+function openCalculator(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var id=createWindow({title:'Calculadora',icon:'🧮',width:280,autoHeight:true,appId:'calc',
+    body:'<div style="display:flex;flex-direction:column;gap:8px"><input id="calc-d" style="font-size:26px;text-align:right;padding:12px;background:rgba(0,0,0,.3);border:none;border-radius:8px;color:var(--text)" value="0" readonly><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'+
+    ['C','±','%','÷','7','8','9','×','4','5','6','−','1','2','3','+','0','.','√','='].map(function(b){var isOp=['÷','×','−','+','=','C','±','%','√'].indexOf(b)>-1;return '<button data-k="'+b+'" style="padding:14px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer;background:'+(isOp?'var(--accent)':'var(--hover)')+';color:'+(isOp?'#fff':'var(--text)')+'">'+b+'</button>'}).join('')+
+    '</div></div>'});
+  var el=document.getElementById(id);if(!el)return id;
+  var disp=$('#calc-d',el),expr='';
+  $$('[data-k]',el).forEach(function(b){b.onclick=function(){var v=b.dataset.k;if(v==='C'){expr='';disp.value='0'}else if(v==='='){try{disp.value=eval(expr.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-').replace(/√/g,'Math.sqrt'));expr=disp.value}catch(e){disp.value='Error';expr=''}}else{expr+=v;disp.value=expr}}});
+  return id;
+}
+
+/* SAFARI */
+function openSafari(){
+  if(isDiskDestroyed){diskBlocked();return}
+  return createWindow({title:'Safari',icon:'🧭',width:760,height:500,appId:'safari',noPad:true,
+    body:'<div style="display:flex;flex-direction:column;height:100%"><div class="finder-toolbar"><input style="flex:1;background:var(--input-bg);border:none;color:var(--text);padding:6px 12px;border-radius:16px;font-size:12.5px" value="https://www.apple.com" readonly></div><div style="flex:1;padding:40px;background:#fff;color:#111;text-align:center">'+
+    (damage.networkFailed?'<p style="color:#c00;font-size:16px">⚠ No hay conexión a Internet</p>':'<h1 style="font-weight:300">Bienvenido a Safari</h1>')+
+    '</div></div>'});
+}
+function openMail(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Correo',icon:'✉️',width:740,height:480,appId:'mail',body:'<div style="display:flex;height:100%"><div style="width:220px;background:var(--sidebar);padding:10px;font-size:12.5px">📥 Bandeja de entrada<br>📤 Enviados<br>📝 Borradores</div><div style="flex:1;padding:16px"><h3>Sin mensajes</h3></div></div>'})}
+function openMusic(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Música',icon:'🎵',width:600,height:400,appId:'music',body:'<div style="text-align:center;padding:60px;color:var(--text-dim)">🎵<br><br>Sin música</div>'})}
+function openPhotos(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Fotos',icon:'🖼️',width:600,height:400,appId:'photos',body:'<div style="text-align:center;padding:60px;color:var(--text-dim)">🖼️<br><br>Sin fotos</div>'})}
+function openSettings(){
+  if(isDiskDestroyed){diskBlocked();return}
+  return createWindow({title:'Ajustes del Sistema',icon:'⚙️',width:680,height:480,appId:'settings',
+    body:'<div style="display:flex;gap:14px;height:100%"><div style="width:180px;background:var(--sidebar);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;font-size:12.5px"><div class="finder-item active">🖥️ General</div><div class="finder-item">🎨 Apariencia</div><div class="finder-item">🔊 Sonido</div><div class="finder-item">🌐 Red</div><div class="finder-item">🔐 Privacidad</div></div><div style="flex:1;padding:6px"><h3>General</h3><br><div style="padding:10px 0;border-bottom:1px solid var(--win-border)">Nombre: MacBook Pro</div><div style="padding:10px 0;border-bottom:1px solid var(--win-border)">Sistema: macOS Sonoma 14.4</div><div style="padding:10px 0;border-bottom:1px solid var(--win-border)">Salud: '+systemHealth+'%</div><div style="padding:16px 0"><button class="btn btn-danger" onclick="location.reload()">Restablecer</button></div></div></div>'});
+}
+function openActivityMonitor(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var rows=[{name:'kernel_task',cpu:'1.2',mem:'312 MB'},{name:'WindowServer',cpu:'4.5',mem:'128 MB'},{name:'launchd',cpu:'0.0',mem:'8 MB'},{name:'Finder',cpu:'0.3',mem:'84 MB'}];
+  var html='<div style="display:flex;justify-content:space-between;margin-bottom:10px"><b>Procesos</b></div><table style="width:100%;font-size:12.5px;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid var(--win-border)"><th style="padding:6px">Nombre</th><th>% CPU</th><th>Memoria</th></tr></thead><tbody>'+rows.map(function(r){return '<tr style="border-bottom:1px solid var(--win-border)"><td style="padding:6px">'+r.name+'</td><td>'+r.cpu+'</td><td>'+r.mem+'</td></tr>'}).join('')+'</tbody></table>';
+  return createWindow({title:'Monitor de Actividad',icon:'📊',width:600,height:440,appId:'activity',body:html});
+}
+function openDiskUtility(){
+  if(isDiskDestroyed){diskBlocked();return}
+  return createWindow({title:'Utilidad de Discos',icon:'💽',width:620,height:440,appId:'disk',
+    body:'<div style="display:flex;gap:14px"><div style="width:200px;background:var(--sidebar);border-radius:8px;padding:10px;font-size:12.5px"><div class="finder-item active">💽 Macintosh HD</div><div class="finder-item">💾 Container disk1</div></div><div style="flex:1"><h3>Macintosh HD</h3><br><div style="padding:8px 0">Formato: APFS</div><div style="padding:8px 0">Capacidad: 2 TB</div><br><button class="btn btn-danger" onclick="killSystem()">Borrar</button></div></div>'});
+}
+function openConsole(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Consola',icon:'📋',width:640,height:400,appId:'console',body:'<pre style="font-family:SF Mono,monospace;font-size:12px;color:var(--text-dim)">'+new Date().toISOString()+' INFO Sistema iniciado\n'+new Date().toISOString()+' INFO launchd OK</pre>'})}
+function openKeychain(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'Acceso a Llaveros',icon:'🔑',width:600,height:380,appId:'keychain',body:'<div style="padding:10px"><b>Llavero de inicio de sesión</b><br><br>🔑 iCloud<br>🔑 Wi-Fi BoxNet 6E<br>🔑 Safari</div>'})}
+function openTrash(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var html=trash.length?trash.map(function(t){return '<div style="padding:8px;border-bottom:1px solid var(--win-border);font-size:12.5px">🗑️ '+esc(t.path)+'</div>'}).join(''):'<div style="padding:20px;color:var(--text-dim)">Vacía</div>';
+  createWindow({title:'Papelera',icon:'🗑️',width:560,height:400,appId:'trash',body:'<div style="padding:10px"><button class="btn btn-danger" style="margin-bottom:10px" onclick="trash=[];toast(\'Papelera\',\'Vaciada\',\'ok\',1500);closeAllWindows()">Vaciar</button>'+html+'</div>'});
+}
+
+/* DESTRUCTION CENTER */
+function openDestructionCenter(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var cats={};
+  DESTRUCTIONS_70.forEach(function(d,i){(cats[d.cat]=cats[d.cat]||[]).push({d:d,idx:i})});
+  var html='<div style="padding:6px 4px"><div style="font-size:13px;color:var(--danger);font-weight:700;margin-bottom:4px">☠️ '+DESTRUCTIONS_70.length+' formas de destruir macOS</div><div style="font-size:11.5px;color:var(--text-dim);margin-bottom:8px">Port de BoxOS 11 — misma funcionalidad</div>';
+  Object.keys(cats).forEach(function(cat){
+    html+='<div class="dc-cat">'+esc(cat)+' ('+cats[cat].length+')</div><div class="dc-grid">';
+    cats[cat].forEach(function(item){html+='<button class="dc-btn" data-d70="'+item.idx+'">'+item.d.i+' '+esc(item.d.n)+'</button>'});
+    html+='</div>';
+  });
+  html+='<div style="display:flex;gap:8px;margin-top:10px"><button class="dc-btn" data-dc="all" style="background:var(--danger);color:#fff;border-color:var(--danger);padding:10px 16px">☢️ Ejecutar TODAS</button><button class="dc-btn" data-dc="random" style="padding:10px 16px">🎲 Aleatoria</button></div></div>';
+  var id=createWindow({title:'Centro de Destrucción · macOS',icon:'☠️',width:800,height:580,appId:'destroy',body:html});
+  var el=document.getElementById(id);if(!el)return id;
+  $$('[data-d70]',el).forEach(function(b){b.onclick=function(){try{DESTRUCTIONS_70[+b.dataset.d70].f()}catch(e){}}});
+  $$('[data-dc]',el).forEach(function(b){b.onclick=function(){
+    if(b.dataset.dc==='all'){if(!confirm('¿Ejecutar las 70 destrucciones?'))return;var i=0;var iv=setInterval(function(){if(i>=DESTRUCTIONS_70.length||isDiskDestroyed){clearInterval(iv);return}try{DESTRUCTIONS_70[i].f()}catch(e){}i++},250)}
+    else{var r=DESTRUCTIONS_70[rnd(0,DESTRUCTIONS_70.length-1)];try{r.f()}catch(e){}toast('🎲 Aleatoria',r.i+' '+r.n,'warn',2500)}
+  }});
+  return id;
+}
+
+/* SCREENS */
+function kernelPanic(reason){
+  reason=reason||'CRITICAL_PROCESS_DIED';
+  playAudio('panic');
+  var s=$('#kernel-panic');
+  var code=$('#kp-code');if(code)code.textContent='Código: '+reason;
+  s.style.display='flex';
+}
+function triggerBeachball(ms){var b=$('#beachball');b.classList.add('on');setTimeout(function(){b.classList.remove('on')},ms)}
+function showNoOS(){toast('Sin sistema','macOS no puede arrancar.','error',5000);setTimeout(restartOS,2500)}
+function bootSingleUser(){$('#kernel-panic').style.display='none';toast('Single-user','Booting single-user mode...','info',2500);setTimeout(restartOS,3000)}
+function restartOS(){
+  closeAllWindows();
+  ['kernel-panic','recovery-screen','shutdown-screen','ransomware','login-screen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none'});
+  ransomwareActive=false;clearInterval(ransomwareTimer);
+  var bs=$('#boot-screen');if(bs)bs.style.display='flex';
+  var bar=$('#boot-bar-fill');if(bar)bar.style.width='0%';
+  var prog=0;
+  var iv=setInterval(function(){
+    prog+=rnd(8,18);
+    if(prog>=100){prog=100;clearInterval(iv)}
+    if(bar)bar.style.width=prog+'%';
+    if(prog>=100){
+      setTimeout(function(){
+        bs.style.setProperty('display','none','important');
+        if(isDiskDestroyed){applyDamageVisuals();toast('Sistema inoperable','El disco está destruido. Recarga (⌘R).','error',8000);return}
+        if(damage.bootloaderGone){showNoOS();return}
+        playAudio('startup');
+        var ls=$('#login-screen');if(ls)ls.style.display='flex';
+      },400);
+    }
+  },200);
+}
+function shutdownOS(){closeAllWindows();var s=$('#shutdown-screen');s.style.display='flex';setTimeout(function(){var st=$('#shutdown-text');if(st)st.textContent='El equipo está apagado. Recarga la página.';var sp=$('.spinner',s);if(sp)sp.style.display='none'},2000)}
+function cleanRansomware(){ransomwareActive=false;clearInterval(ransomwareTimer);var r=$('#ransomware');if(r)r.style.display='none';toast('Ransomware eliminado','Archivos desencriptados.','ok',4000)}
+function triggerRansomware(){ransomwareActive=true;$('#ransomware').style.display='flex';var t=300;clearInterval(ransomwareTimer);ransomwareTimer=setInterval(function(){t--;var m=String(Math.floor(t/60)).padStart(2,'0'),s=String(t%60).padStart(2,'0');var te=$('#ransom-timer');if(te)te.textContent=m+':'+s;if(t<=0){clearInterval(ransomwareTimer);kernelPanic('RANSOMWARE_EXPIRED')}},1000)}
+function payRansom(){toast('Error','Transacción fallida.','error')}
+function triggerForkBomb(){toast('Peligro','ForkBomb...','error',1000);var c=0;forkBombInterval=setInterval(function(){c++;createWindow({title:'Fork #'+c,icon:'💥',width:260,height:160,appId:'chaos',body:'<div style="padding:20px">Bifurcando...</div>'});if(c>25){clearInterval(forkBombInterval);kernelPanic('RESOURCE_EXHAUSTION')}},100)}
+function triggerMiner(){if(minerInterval)return;toast('CryptoMiner','Minando al 100%...','warn',3000);damage.overheat=true;damage.lowMem=true;applyDamageVisuals();minerInterval=setInterval(function(){systemHealth=Math.max(0,systemHealth-3);if(systemHealth<=0){clearInterval(minerInterval);kernelPanic('CPU_OVERHEAT')}},2000)}
+function triggerKeylogger(){if(keyloggerInterval)return;toast('Keylogger','Registrando...','error',3000);keyloggerInterval=setInterval(function(){if(Math.random()<.3)toast('Keylogger','Tecla capturada','warn',800)},3000);setTimeout(function(){clearInterval(keyloggerInterval);keyloggerInterval=null},20000)}
+function triggerTrojan(){toast('Trojan','Puerta trasera.','error',4000);setTimeout(function(){applyEffect('no-network')},4000)}
+function triggerRootkit(){toast('Rootkit','En el kernel...','error',4000);setTimeout(function(){kernelPanic('KERNEL_DATA_INPAGE_ERROR')},3500)}
+function triggerWorm(){toast('Worm','Propagándose...','error',4000);setTimeout(function(){applyEffect('no-network')},2500);setTimeout(function(){kernelPanic('NETWORK_STACK_CORRUPTION')},6000)}
+
+/* SPOTLIGHT / CC / LAUNCHPAD */
+function toggleSpotlight(){var s=$('#spotlight');var open=s.classList.toggle('open');if(open){var inp=$('#spot-input');inp.value='';inp.focus();renderSpotlight('')}}
+function renderSpotlight(q){
+  var res=$('#spot-results');if(!res)return;
+  var items=Object.keys(APPS).filter(function(k){return APPS[k].name.toLowerCase().indexOf(q.toLowerCase())>-1});
+  res.innerHTML=items.length?items.map(function(k){return '<div class="spotlight-item" data-app="'+k+'"><span>'+APPS[k].icon+'</span><span>'+esc(APPS[k].name)+'</span></div>'}).join(''):'<div style="padding:20px;color:var(--text-dim);text-align:center">Sin resultados</div>';
+  $$('.spotlight-item',res).forEach(function(el){el.onclick=function(){toggleSpotlight();APPS[el.dataset.app].run()}});
+}
+function toggleCC(){var c=$('#control-center');c.style.display=c.style.display==='block'?'none':'block'}
+function toggleFlyout(id){var f=document.getElementById(id);if(!f)return;var open=f.style.display==='block';$$('.flyout').forEach(function(x){x.style.display='none'});if(!open)f.style.display='block'}
+function toggleLaunchpad(){
+  if(isDiskDestroyed){diskBlocked();return}
+  var lp=$('#launchpad');
+  if(!lp.classList.contains('open')){
+    var g=$('#lp-grid');
+    g.innerHTML=Object.keys(APPS).map(function(k){return '<div class="lp-item" data-app="'+k+'"><div class="lp-icon">'+APPS[k].icon+'</div><div class="lp-name">'+esc(APPS[k].name)+'</div></div>'}).join('');
+    $$('.lp-item',g).forEach(function(el){el.onclick=function(){lp.classList.remove('open');APPS[el.dataset.app].run()}});
+  }
+  lp.classList.toggle('open');
+}
+function toggleAppleMenu(){showDialog({title:'Apple',icon:'🍎',message:'BoxOS 11 port para macOS\n\nAtajos:\n⌘+Espacio → Spotlight\n⌘+Q → Cerrar ventana\n⌘+M → Minimizar\nF5 → Recargar'})}
+
+/* SETTINGS */
+function applySettings(){document.body.classList.toggle('light',settings.theme==='light');var d=$('#desktop');if(d)d.className=settings.wallpaper+(safeMode?' safe-mode':'')}
+function setVolume(v){settings.volume=+v;settings.sound=+v>0}
+
+/* CLOCK */
+function updateClock(){var d=new Date();var c=$('#mb-clock');if(c)c.textContent=d.toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'})+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+
+/* CTX MENU */
+document.addEventListener('contextmenu',function(e){
+  e.preventDefault();
+  var icon=e.target.closest('.desktop-icon');
+  if(icon){
+    var ic=DESKTOP_ICONS.find(function(i){return i.id===icon.dataset.id});
+    if(!ic)return;
+    showCtx(e.clientX,e.clientY,[{label:'Abrir',icon:'📂',action:function(){ic.run()}},{label:'Obtener información',icon:'ℹ️',action:function(){showDialog({title:ic.label,message:'Tipo: Carpeta'})}}]);
+  }
+});
+function showCtx(x,y,items){
+  var m=$('#ctx-menu');
+  m.innerHTML=items.map(function(it,i){return '<div class="ctx-item" data-i="'+i+'"><span>'+it.icon+'</span><span>'+esc(it.label)+'</span></div>'}).join('');
+  m.style.display='block';
+  m.style.left=Math.min(x,innerWidth-m.offsetWidth-6)+'px';
+  m.style.top=Math.min(y,innerHeight-m.offsetHeight-6)+'px';
+  $$('.ctx-item',m).forEach(function(el){el.onclick=function(){hideContextMenu();var it=items[+el.dataset.i];if(it&&it.action)it.action()}});
+}
+function hideContextMenu(){var m=$('#ctx-menu');if(m)m.style.display='none'}
+document.addEventListener('click',function(e){if(!e.target.closest('#ctx-menu'))hideContextMenu();if(!e.target.closest('#control-center')){var cc=$('#control-center');if(cc&&!e.target.closest('#mb-wifi'))cc.style.display='none'}});
+
+/* KEYBOARD */
+document.addEventListener('keydown',function(e){
+  if(e.metaKey||e.ctrlKey){
+    var k=(e.key||'').toLowerCase();
+    if(k===' '){e.preventDefault();toggleSpotlight();return}
+    if(k==='q'){e.preventDefault();if(activeWin)closeWindow(activeWin);return}
+    if(k==='m'){e.preventDefault();if(activeWin)minimizeWindow(activeWin);return}
+  }
+  if(e.key==='Escape'){var sp=$('#spotlight');if(sp)sp.classList.remove('open');var lp=$('#launchpad');if(lp)lp.classList.remove('open');hideContextMenu()}
+  if(e.key==='Enter'&&e.target&&e.target.id==='login-pass'){var v=e.target.value;if(v===settings.password||v==='box'){loginUser()}else{toast('Contraseña incorrecta','Pista: "box"','error');e.target.value=''}}
+});
+document.addEventListener('input',function(e){if(e.target&&e.target.id==='spot-input')renderSpotlight(e.target.value)});
+function loginUser(){$('#login-screen').style.display='none';playAudio('startup');toast('Bienvenido','Sesión iniciada como '+settings.username,'ok',2000)}
+
+/* INIT */
+function initMacOS(){
+  vfs=createVFS();
+  applySettings();
+  renderDock();
+  renderDesktopIcons();
+  updateClock();
+  setInterval(updateClock,1000);
+  // Boot sequence
+  var bs=$('#boot-screen');var bar=$('#boot-bar-fill');var prog=0;
+  var iv=setInterval(function(){
+    prog+=rnd(8,18);
+    if(prog>=100){prog=100;clearInterval(iv)}
+    if(bar)bar.style.width=prog+'%';
+    if(prog>=100){setTimeout(function(){bs.style.setProperty('display','none','important');$('#login-screen').style.display='flex'},400)}
+  },200);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initMacOS);
+else initMacOS();
+</script>
+</body>
+</html>

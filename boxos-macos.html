@@ -168,6 +168,8 @@ input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(
 .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--win-border);font-size:12.5px}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+
+  .mw-search{background:var(--input-bg,rgba(0,0,0,.3));color:var(--text);border:1px solid var(--win-border,rgba(255,255,255,.1));border-radius:16px;padding:6px 12px;font-size:12px;outline:none;width:200px;user-select:text;-webkit-user-select:text;}
 </style>
 </head>
 <body oncontextmenu="return false;">
@@ -523,6 +525,7 @@ var APPS={
   photos:{name:'Fotos',icon:'🖼️',run:function(){openPhotos()}},
   terminal:{name:'Terminal',icon:'⬛',run:function(){openTerminal()}},
   calc:{name:'Calculadora',icon:'🧮',run:function(){openCalculator()}},
+  appstore:{name:'App Store',icon:'🛍️',run:function(){openAppStore()}},
   settings:{name:'Ajustes del Sistema',icon:'⚙️',run:function(){openSettings()}},
   activity:{name:'Monitor de Actividad',icon:'📊',run:function(){openActivityMonitor()}},
   disk:{name:'Utilidad de Discos',icon:'💽',run:function(){openDiskUtility()}},
@@ -600,7 +603,7 @@ function closeAllWindows(){Object.keys(openWindows).forEach(function(id){closeWi
 
 function renderDock(){
   var d=$('#dock');if(!d)return;
-  var order=['finder','launchpad','safari','mail','notes','music','photos','terminal','calc','settings','activity','disk','console','keychain','destroy'];
+  var order=['finder','launchpad','safari','mail','notes','music','photos','terminal','calc','settings','activity','disk','console','keychain','appstore','destroy'];
   d.innerHTML=order.map(function(k){var a=APPS[k];return '<div class="dock-item" data-appid="'+k+'" title="'+esc(a.name)+'" onclick="dockClick(\''+k+'\')">'+a.icon+'<span class="dock-label">'+esc(a.name)+'</span></div>'}).join('')+'<div class="dock-sep"></div><div class="dock-item" onclick="openTrash()" title="Papelera">🗑️<span class="dock-label">Papelera</span></div>';
 }
 function dockClick(k){playAudio('click');APPS[k].run()}
@@ -1024,6 +1027,77 @@ function initMacOS(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initMacOS);
 else initMacOS();
+
+function openAppStore(){if(isDiskDestroyed){diskBlocked();return}return createWindow({title:'App Store',icon:'🛍️',width:880,height:580,appId:'appstore',body:'<div style="font-size:16px;font-weight:600;margin-bottom:14px">Apps destacadas</div><div class="store-grid"><div class="store-item"><h4>🛡️ Box Antivirus</h4><p>Protección total.</p><button onclick="toast(\'Instalado\',\'Ya está instalado.\',\'ok\')">Instalado</button></div><div class="store-item"><h4>☠️ Centro de Destrucción</h4><p>+70 formas nuevas.</p><button onclick="openDestructionCenter()">Abrir</button></div>'+mwNativeHTML()+'</div>'+mwCatalogHTML()})}
+
+/* ============ CATÁLOGO DE MALWARE DE JUGUETE (todo simulado, solo efectos visuales) ============ */
+var MALWARE_CATALOG = [["💘", "Melissa", "Macro de Word que se reenvía a tus contactos.", ["Abriendo \"Importante.doc\"...", "Macro ejecutada. Reenviando a 50 contactos..."], "net"], ["🔴", "Code Red", "Desfigura webs con un mensaje muy dramático.", ["Escaneando IPs aleatorias...", "Página web desfigurada. Hackeado por alguien."], "popups"], ["💥", "Blaster", "Apaga el equipo con una cuenta atrás.", ["Explotando servicio RPC...", "El sistema se apagará en 60 segundos."], "panic"], ["🐛", "Sasser", "Reinicia el PC una y otra vez.", ["LSASS ha finalizado inesperadamente...", "Reiniciando en 30 segundos..."], "panic"], ["🧟", "Conficker", "Gusano que no se deja desinfectar.", ["Deshabilitando actualizaciones...", "Bloqueando webs de antivirus..."], "net"], ["⚙️", "Stuxnet Casero", "Sabotea la lavadora del vecino.", ["Buscando centrifugadoras...", "Subiendo las revoluciones de la lavadora..."], "heat"], ["😭", "WannaCry Jr.", "El primo pequeño del ransomware famoso.", ["Cifrando archivos...", "Tus archivos han sido cifrados."], "ransom"], ["🌋", "NotPetya Light", "Dice ser ransomware, pero solo destruye.", ["Reemplazando el sector de arranque...", "Mostrando mensaje de rescate falso..."], "panic"], ["📬", "Mydoom", "Envía spam a medio planeta.", ["Recolectando correos...", "Enviando 10.000 correos por minuto..."], "net"], ["☢️", "CIH Chernobyl", "Se activa el 26 de abril. Casualmente, hoy.", ["Comprobando fecha: 26 de abril...", "Borrando la BIOS (de mentira)."], "panic"], ["🎨", "Michelangelo", "Se activa el 6 de marzo. En este simulador, siempre.", ["Esperando el 6 de marzo...", "¡Hoy es 6 de marzo!"], "panic"], ["🧠", "Brain", "El primer virus de PC (1986). Firma incluida.", ["Infectando sector de arranque...", "(c) Brain 1986 - Lahore, Pakistán"], "none"], ["🔐", "CryptoLocker Vintage", "Cifrado con estilo retro.", ["Generando clave RSA muy seria...", "Archivos cifrados. Pago en bitcoin."], "ransom"], ["⚡", "Zeus Bot", "Roba credenciales... de Monopoly.", ["Inyectando formulario falso del banco...", "Credenciales robadas: usuario 1234, clave 1234."], "keys"], ["🤖", "Mirai Casero", "Botnet de cámaras IP con contraseña \"admin\".", ["Probando admin/admin...", "Cámara #4.211 reclutada."], "net"], ["☕", "Botnet Cafetera", "10.000 cafeteras inteligentes atacando juntas.", ["Cafetera #1 reclutada...", "Todas atacando. Nadie tiene cafeína."], "net"], ["🍞", "Botnet Tostadoras", "Un ejército de tostadoras con WiFi.", ["Buscando tostadoras vulnerables...", "Tostada lista. Ataque coordinado en curso."], "heat"], ["🚪", "Backdoor Puerta Abierta", "Deja la puerta trasera abierta, y encendida la luz.", ["Abriendo el puerto 31337...", "Cartel de \"Bienvenidos\" instalado."], "net"], ["🎉", "Zombie Party", "Botnet clásica con fiesta incluida.", ["Invitando zombis...", "La fiesta ha empezado. Ventanas para todos."], "popups"], ["🦠", "Emotet Fantasma", "Se hace pasar por tu jefe con una \"factura\".", ["Respondiendo a un hilo de correo real...", "Adjunto \"urgente\" enviado."], "net"], ["📄", "Factura Pendiente.pdf.exe", "Doble extensión, doble problema.", ["Abriendo factura.pdf...", "Espera, pone .exe al final."], "panic"], ["📸", "Foto de tu ex.jpg.exe", "Curiosidad: 1. Antivirus: 0.", ["Cargando foto...", "No era una foto."], "popups"], ["👑", "Príncipe Nigeriano", "Necesita tu ayuda para mover 40 millones.", ["Recibiendo correo muy urgente...", "Datos bancarios solicitados con mucho cariño."], "none"], ["🏆", "Visitante 1.000.000", "¡Felicidades! Pulsa aquí. Y aquí. Y aquí.", ["¡Eres el visitante 1.000.000!", "Reclama tu premio (en 40 ventanas)."], "popups"], ["📞", "Soporte Técnico Falso", "\"Le llamamos de Microsoft, su PC tiene un virus\".", ["Llamada entrante: +1-800-ESTAFA...", "Instalando control remoto muy legítimo."], "keys"], ["🚨", "Scareware 9999 Virus", "Tu PC tiene 9999 virus. Compra la cura.", ["ALERTA: 9999 amenazas detectadas.", "Comprar \"AntiVirus Total Pro\" por solo 99,99 €."], "popups"], ["🧹", "Optimizador de PC Ultra", "Libera 40 GB borrando cosas del sistema.", ["Analizando 14.000 \"problemas\"...", "Limpiando archivos importantes."], "mem"], ["🧽", "Limpiador de RAM 9000", "Libera memoria usando memoria.", ["Liberando RAM...", "Ahora usa más RAM que antes."], "mem"], ["🔌", "Actualizar Flash Player", "Actualización obligatoria de algo que ya no existe.", ["Flash Player está desactualizado.", "Descargando actualización de 4 MB y 14 amigos."], "popups"], ["☕", "Java Update Falso", "Instala 7 barras de herramientas.", ["Descargando actualización de Java...", "Instalando barras de herramientas (7)."], "mem"], ["🔎", "Ask Toolbar", "Cambia tu buscador sin preguntar.", ["Cambiando página de inicio...", "Tu buscador ahora es otro."], "hue"], ["🐼", "Baidu PC Faster", "\"Acelera\" tu PC con 30 procesos nuevos.", ["Instalando acelerador...", "30 procesos nuevos en segundo plano."], "mem"], ["🎮", "Crack de Photoshop", "100% real, sin virus. Palabra de honor.", ["Descargando crack_photoshop_FINAL_v2.zip...", "Desactiva tu antivirus para continuar."], "panic"], ["🧱", "Minecraft Premium GRATIS", "Una cuenta premium... de otra persona.", ["Iniciando sesión con la cuenta de \"Steve\"...", "Tu contraseña se ha enviado para \"verificar\"."], "keys"], ["💎", "Hack Diamantes Free Fire", "Genera 99999 diamantes. Solo roba tu cuenta.", ["Introduce tu usuario y contraseña...", "Generando diamantes..."], "keys"], ["🎲", "Emulador de PS5 GRATIS", "Spoiler: es un minero.", ["Cargando emulador...", "Minando criptomonedas en segundo plano."], "heat"], ["📺", "Netflix Gratis de Por Vida", "Inicia sesión con tu contraseña para \"verificar\".", ["Verificando cuenta...", "Contraseña guardada en un lugar \"seguro\"."], "keys"], ["💬", "WhatsApp Plus Oro", "Colores nuevos y puerta trasera sin costo extra.", ["Instalando tema dorado...", "Puerta trasera instalada."], "net"], ["📷", "Hack de Instagram", "Hackea cuentas ajenas, o la tuya.", ["Introduce el usuario a hackear...", "Hackeando... tu cuenta."], "keys"], ["🎵", "LimeWire Reborn", "Descargas \"Metallica - One.mp3\" (7 MB de troyano).", ["Descargando música...", "Metallica - One.mp3.exe"], "popups"], ["☎️", "Dialer 0-900", "Llama a un número premium a las 3 AM.", ["Marcando 0-900-ESTAFA...", "Factura telefónica: 4.000 €."], "audio"], ["🌊", "uTorrent Pro Crackeado", "Descarga lo que quieras. Él descarga lo suyo.", ["Descargando torrent...", "Descargando también otras cosas."], "net"], ["🪟", "Windows 12 Beta Filtrada", "ISO de 2 MB. Sospechoso.", ["Montando ISO de 2 MB...", "Instalando Windows 12 (spoiler: no)."], "panic"], ["🧩", "Driver Updater Gratis", "Actualiza drivers que no existen.", ["Escaneando 0 drivers...", "Se encontraron 4.000 drivers obsoletos."], "panic"], ["🔑", "Activador de Windows Gratis", "Activa Windows y, de paso, todo lo demás.", ["Ejecutando activador como administrador...", "Activando también otras cosas."], "net"], ["🐎", "Troyano Caballo de Madera", "El clásico regalo que nadie debía aceptar.", ["Aceptando regalo misterioso...", "Soldados escondidos desplegándose."], "popups"], ["🚀", "CPU Booster +300% FPS", "Sobrecalienta la CPU hasta la gloria.", ["Overclock a 9 GHz...", "Temperatura: demasiado."], "heat"], ["🛡️", "Defender Pro FALSO", "Solo detecta a la competencia.", ["Escaneando...", "Amenaza detectada: tu antivirus real. Eliminando."], "none"], ["📻", "Rogue AV 2009", "Alertas rojas cada tres segundos.", ["¡PELIGRO! Virus detectado.", "¡PELIGRO! Otro virus detectado."], "popups"], ["🪟", "Adware Ventanitas", "1 clic, 1000 ventanas.", ["Instalando ofertas imperdibles...", "Ventanas con descuentos aparecen."], "popups"], ["🖼️", "Fondo Animado Gratis", "Anima tu escritorio y también tus procesos.", ["Descargando fondo de pantalla...", "Animando todo (el procesador también)."], "hue"], ["🌸", "Tema Anime Gratis", "Instala el tema y dos mineros.", ["Aplicando tema kawaii...", "Dos mineros instalados de regalo."], "heat"], ["🦎", "Polimórfico Camaleón", "Cambia de forma para que no lo reconozcas.", ["Mutando...", "Ya no se parece a sí mismo."], "hue"], ["😺", "Cursor de Hello Kitty", "Cursor tierno con puertas traseras.", ["Instalando cursor adorable...", "Puerta trasera con lazo rosa."], "net"], ["🦍", "Bonzi Buddy", "Tu amigo gorila que vende tus datos.", ["¡Hola! Soy Bonzi, tu nuevo amigo...", "Me encanta buscar ofertas con tus datos."], "popups"], ["🔗", "Cadena de WhatsApp", "Reenvía a 20 contactos o te caerá una maldición.", ["Reenvía a 20 contactos...", "Reenviando automáticamente a todos."], "net"], ["📊", "Macro Maldita de Excel", "\"Habilitar contenido\": lo que nunca debes hacer.", ["Pulsando \"Habilitar contenido\"...", "Macro ejecutada (dentro de otra macro)."], "mem"], ["🎼", "Rootkit de Sony", "CD de música con rootkit de regalo.", ["Insertando CD de música...", "Rootkit instalado como bonus track."], "panic"], ["🤗", "Ransomware Amable", "Cifra tus archivos y solo pide un abrazo.", ["Cifrando archivos con cariño...", "Para descifrar: abraza a alguien."], "hue"], ["🍪", "Stealer de Cookies", "Roba cookies. Las de verdad no, solo las del navegador.", ["Buscando galletas en el navegador...", "Galletas robadas: 42."], "keys"], ["📅", "Bomba Lógica Viernes 13", "Duerme hasta el día menos pensado.", ["Esperando el viernes 13...", "¡Hoy es viernes 13! (en este simulador, siempre)"], "panic"], ["♾️", "Ventanita Infinita", "Cada ventana abre dos más.", ["Abriendo una ventana...", "Ahora hay dos. Luego cuatro."], "popups"], ["⌨️", "Pelea de Teclado", "Cambia las letras de sitio.", ["Reorganizando teclas...", "La Q ahora está en el lugar de la P."], "text"], ["🖱️", "Cursor Loco", "El cursor se rebela contra ti.", ["Cursor ganando autonomía...", "El cursor tiene sus propias ideas."], "flip"], ["🔄", "Pantalla Invertida", "Colores invertidos \"por tu bien\".", ["Invirtiendo colores...", "Ahora todo es más raro."], "invert"], ["🙃", "Pantalla Patas Arriba", "Todo boca abajo, como en Australia.", ["Girando la pantalla 180°...", "Bienvenido al otro hemisferio."], "flip"], ["💙", "Pantalla Azul Falsa", "Muestra un BSOD que ni siquiera era necesario.", ["Preparando pantalla azul...", "Error crítico (de mentira)."], "panic"], ["📢", "Ruido Aleatorio", "Sonidos raros a las 3 AM.", ["Reproduciendo sonidos inquietantes...", "Silenciando el audio para que descanses."], "audio"], ["🎀", "Todo Rosa", "Cambia todos los colores a rosa.", ["Aplicando filtro rosa...", "Todo es rosa ahora."], "hue"], ["🪙", "Clipper de Criptomonedas", "Cambia la dirección de la cartera por la suya.", ["Vigilando el portapapeles...", "Cartera sustituida: nada que ver con la tuya."], "net"]];
+var MW_CORE = [["🛡️", "SEGURAZO Antivirus", "El antivirus que \"te protege\". Spoiler: es peor que el virus.", ["Instalando \"protección total\"...", "14 barras de herramientas instaladas en tu navegador.", "Tu PC ahora va más lento. Funciona como se esperaba."], "mem"], ["⌨️", "KeyGrab Ultra", "\"Edición premium\" del keylogger.", ["Instalando KeyGrab Ultra...", "Capturando teclas con estilo."], "keys"], ["🎬", "VLC GRATIS SIN VIRUS!", "Descarga \"el codec que te falta\". No es VLC.", ["Descargando \"codec definitivo\"...", "Esto nunca fue VLC.", "Puerta trasera instalada."], "panic"], ["💌", "I LOVE YOU", "LOVE-LETTER-FOR-YOU.txt.vbs: ábrelo, es de un admirador secreto.", ["Abriendo carta de amor...", "Sobrescribiendo tus fotos y documentos...", "Reenviándose a toda tu libreta de contactos..."], "panic"], ["🧟", "BotNet Zombie", "Convierte tu PC en parte de una red zombi.", ["Conectando con el servidor de control...", "Este equipo ahora forma parte de una red zombi.", "Enviando spam en un ataque coordinado..."], "panic"], ["🕶️", "Spyware Total", "Vigila todo lo que haces.", ["Recolectando historial y actividad...", "Datos enviados a un servidor desconocido."], "mem"]];
+var MW_ALL = true ? MW_CORE.concat(MALWARE_CATALOG) : MALWARE_CATALOG;
+var MW_ENV = {panic:function(r){kernelPanic(r);},win:function(t,i,b){createWindow({title:t,icon:i,width:300,height:150,appId:'chaos',body:b});}};
+var _mwUndo = {};
+
+function _mwSlug(s){ return String(s).toUpperCase().replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,''); }
+function _mwTemp(key, on, off, ms){
+  clearTimeout(_mwUndo[key]); on();
+  _mwUndo[key] = setTimeout(off, ms);
+}
+function mwEffect(fx, m){
+  try{
+    if(fx==='panic'){ MW_ENV.panic(_mwSlug(m[1])+'_PAYLOAD'); }
+    else if(fx==='net'){ _mwTemp('net', function(){ damage.networkFailed=true; applyDamageVisuals(); }, function(){ damage.networkFailed=false; applyDamageVisuals(); }, 15000); }
+    else if(fx==='mem'){ _mwTemp('mem', function(){ damage.lowMem=true; applyDamageVisuals(); }, function(){ damage.lowMem=false; applyDamageVisuals(); }, 15000); }
+    else if(fx==='heat'){ _mwTemp('heat', function(){ damage.overheat=true; applyDamageVisuals(); }, function(){ damage.overheat=false; applyDamageVisuals(); }, 15000); }
+    else if(fx==='text'){ _mwTemp('text', function(){ damage.fontCorrupt=true; applyDamageVisuals(); }, function(){ damage.fontCorrupt=false; applyDamageVisuals(); }, 8000); }
+    else if(fx==='audio'){ _mwTemp('audio', function(){ damage.audioFailed=true; applyDamageVisuals(); }, function(){ damage.audioFailed=false; applyDamageVisuals(); }, 8000); }
+    else if(fx==='invert'){ _mwTemp('invert', function(){ document.documentElement.style.filter='invert(1)'; }, function(){ document.documentElement.style.filter=''; }, 7000); }
+    else if(fx==='hue'){ _mwTemp('hue', function(){ document.documentElement.style.filter='hue-rotate(300deg) saturate(1.6)'; }, function(){ document.documentElement.style.filter=''; }, 7000); }
+    else if(fx==='flip'){ _mwTemp('flip', function(){ document.body.style.transition='transform .6s'; document.body.style.transform='rotate(180deg)'; }, function(){ document.body.style.transform=''; }, 7000); }
+    else if(fx==='ransom'){ triggerRansomware(); }
+    else if(fx==='keys'){ triggerKeylogger(); }
+    else if(fx==='popups'){
+      var msgs=['¡Felicidades!','Tu PC tiene 9999 virus','Haz clic aquí','Oferta limitada','Descarga ahora','No cierres esta ventana','Actualización necesaria','Eres el ganador'];
+      msgs.forEach(function(t,i){ setTimeout(function(){ MW_ENV.win(m[1]+' #'+(i+1), m[0], '<div style="padding:16px;text-align:center;font-size:15px">'+esc(t)+'<br><br>(ventana de mentira)</div>'); }, i*180); });
+    }
+  }catch(e){ console.warn('mwEffect', fx, e); }
+}
+function runMalware(i){
+  var m = MW_ALL[i]; if(!m) return;
+  var steps = m[3], gap = 2200;
+  steps.forEach(function(s,k){
+    setTimeout(function(){ toast(m[1], s, k===steps.length-1?'error':'warn', 3200); }, k*gap);
+  });
+  setTimeout(function(){ mwEffect(m[4], m); }, steps.length*gap);
+}
+function mwFilter(q){
+  q = String(q||'').toLowerCase(); var n = 0;
+  Array.prototype.forEach.call(document.querySelectorAll('.mw-item'), function(e){
+    var ok = (e.getAttribute('data-n')||'').indexOf(q) > -1; e.style.display = ok ? '' : 'none'; if(ok) n++;
+  });
+  var c = document.getElementById('mw-count'); if(c) c.textContent = n;
+}
+function mwItemsHTML(){
+  return MW_ALL.map(function(m,i){
+    return '<div class="store-item mw-item" data-n="'+esc((m[1]+' '+m[2]).toLowerCase())+'"><h4>'+m[0]+' '+esc(m[1])+'</h4><p>'+esc(m[2])+'</p><button onclick="runMalware('+i+')">Ejecutar</button></div>';
+  }).join('');
+}
+function mwCatalogHTML(){
+  return '<div style="display:flex;align-items:center;gap:12px;margin:22px 0 12px;"><div style="font-size:16px;font-weight:600;flex:1;">Catálogo de malware (<span id="mw-count">'+MW_ALL.length+'</span>)</div>'+
+    '<input class="mw-search" placeholder="Buscar malware..." oninput="mwFilter(this.value)" onkeydown="event.stopPropagation()"></div>'+
+    '<div class="store-grid">'+mwItemsHTML()+'</div>';
+}
+function mwNativeHTML(){
+  return [
+    ['💣','Ransomware Simulator','Encripta el disco.','triggerRansomware()','Ejecutar'],
+    ['⚡','ForkBomb 3000','Estrés extremo.','triggerForkBomb()','Ejecutar'],
+    ['💰','CryptoMiner','Minar al 100% CPU.','triggerMiner()','Ejecutar'],
+    ['🕵️','Keylogger','Registra pulsaciones.','triggerKeylogger()','Ejecutar'],
+    ['🐴','Trojan','Puertas traseras.','triggerTrojan()','Ejecutar'],
+    ['👻','Rootkit','Oculto en kernel.','triggerRootkit()','Ejecutar'],
+    ['🪱','Worm','Se propaga por la red.','triggerWorm()','Ejecutar']
+  ].map(function(x){ return '<div class="store-item"><h4>'+x[0]+' '+x[1]+'</h4><p>'+x[2]+'</p><button onclick="'+x[3]+'">'+x[4]+'</button></div>'; }).join('');
+}
+
 </script>
 </body>
 </html>
